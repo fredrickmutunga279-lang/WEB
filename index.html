@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Attachment Report Builder — Academic Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{navy:{50:'#eef3f9',100:'#d9e4f0',200:'#b3c9e1',600:'#1e4a7a',700:'#15365c',800:'#0f2a44',900:'#0b2138'},gold:{50:'#fbf7ea',100:'#f5ebcf',300:'#ddc37a',400:'#c9a94f',500:'#b8933f',600:'#9a7a32'},paper:'#f6f3ec',ink:'#1a2332'},fontFamily:{serif:['Fraunces','Georgia','serif'],sans:['Inter','system-ui','sans-serif'],mono:['JetBrains Mono','monospace']},boxShadow:{card:'0 1px 3px rgba(15,42,68,.08),0 8px 24px -12px rgba(15,42,68,.18)',lift:'0 12px 32px -12px rgba(15,42,68,.28)',paper:'0 20px 60px -20px rgba(15,42,68,.35)'}}}}
+</script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root{--navy:#0f2a44;--gold:#b8933f;--paper:#f6f3ec}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:#1a2332;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(rgba(15,42,68,.06) 1px,transparent 1px);background-size:22px 22px;mask-image:linear-gradient(to bottom,black,transparent 55%)}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#c9c0a8;border-radius:8px;border:2px solid #f6f3ec}::-webkit-scrollbar-thumb:hover{background:#b8933f}
+.field-label{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#3a4a63;margin-bottom:.45rem;display:block}
+.req{color:#b91c1c}.field-input,.field-textarea,select.field-input{width:100%;background:#fff;border:1.5px solid #ddd5c2;border-radius:12px;padding:.72rem .9rem;font-size:.92rem;line-height:1.5;color:#1a2332;outline:none;transition:.18s}
+.field-input:focus,.field-textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,42,68,.12)}
+.field-textarea{resize:vertical;min-height:120px;font-family:Inter}
+.field-hint{font-size:.78rem;color:#6b7a94;margin-top:.4rem;line-height:1.5}
+.field-group{background:#fff;border:1px solid #e8e0cd;border-radius:16px;padding:1rem 1.1rem;box-shadow:0 1px 2px rgba(15,42,68,.05)}
+.btn-primary{background:var(--navy);color:#fff;font-weight:700;border-radius:12px;padding:.7rem 1.25rem;font-size:.9rem;display:inline-flex;align-items:center;gap:.5rem;transition:.18s;border:1.5px solid var(--navy)}
+.btn-primary:hover{background:#1a3a5c;transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(15,42,68,.5)}
+.btn-gold{background:linear-gradient(135deg,#c9a94f,#b8933f);color:#0f2a44;font-weight:800;border-radius:12px;padding:.7rem 1.25rem;font-size:.9rem;display:inline-flex;align-items:center;gap:.5rem;border:1px solid #9a7a32;transition:.18s}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 10px 24px -10px rgba(184,147,63,.7)}
+.btn-secondary{background:#fff;border:1.5px solid #d8cfb8;color:#0f2a44;font-weight:700;border-radius:12px;padding:.7rem 1.15rem;font-size:.9rem;display:inline-flex;align-items:center;gap:.5rem;transition:.18s}
+.btn-secondary:hover{border-color:var(--navy);box-shadow:0 6px 16px -8px rgba(15,42,68,.3)}
+.btn-ghost{color:#3a4a63;font-weight:600;padding:.6rem .9rem;border-radius:10px;font-size:.88rem;display:inline-flex;align-items:center;gap:.4rem}
+.btn-ghost:hover{background:#ece6d5;color:var(--navy)}
+.btn-danger{background:#fef2f2;border:1.5px solid #fecaca;color:#b91c1c;font-weight:700;border-radius:12px;padding:.65rem 1rem;font-size:.87rem}
+.btn-danger:hover{background:#fee2e2}
+.badge{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:.32rem .7rem;border-radius:999px}
+.badge-draft{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+.badge-completed{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+.toolbar{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.6rem;background:#f6f3ec;border:1px solid #e3dcc8;border-radius:10px;padding:.4rem}
+.toolbar button{font-size:.78rem;font-weight:700;background:#fff;border:1px solid #ddd5c2;border-radius:8px;padding:.3rem .6rem;color:#0f2a44}
+.toolbar button:hover{background:#0f2a44;color:#fff;border-color:#0f2a44}
+.word-badge{font-family:'JetBrains Mono';font-size:.7rem;background:#eef3f9;color:#15365c;border:1px solid #c9d8ea;padding:.2rem .55rem;border-radius:999px;font-weight:600}
+.ai-inline-btn{font-size:.75rem;font-weight:800;color:#7a5f1f;background:linear-gradient(135deg,#fbf7ea,#f5ebcf);border:1px solid #ddc37a;border-radius:999px;padding:.28rem .7rem}
+.ai-inline-btn:hover{background:#b8933f;color:#fff}
+.dynamic-row{display:flex;align-items:flex-start;gap:.6rem}
+.row-num{flex-shrink:0;width:28px;height:28px;border-radius:999px;background:#0f2a44;color:#fff;font-size:.75rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:.55rem}
+.icon-btn-danger{flex-shrink:0;width:38px;height:42px;border-radius:10px;background:#fef2f2;border:1.5px solid #fecaca;color:#b91c1c;font-weight:900;font-size:1.1rem}
+.icon-btn-danger:hover{background:#b91c1c;color:#fff}
+.add-btn{margin-top:.7rem;font-size:.85rem;font-weight:700;color:#15365c;background:#eef3f9;border:1.5px dashed #9db8d6;border-radius:10px;padding:.55rem 1rem;width:100%}
+.add-btn:hover{background:#0f2a44;color:#fff;border-style:solid}
+.empty-list-note{font-size:.85rem;color:#8a94a8;font-style:italic;background:#f9f7f0;border:1px dashed #ddd5c2;border-radius:10px;padding:.8rem;text-align:center}
+.empty-note{color:#9aa3b5;font-style:italic}
+.card-hover{transition:.2s}.card-hover:hover{transform:translateY(-3px);box-shadow:0 16px 36px -16px rgba(15,42,68,.3)}
+.fade-in{animation:fadeIn .35s ease both}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.slide-in{animation:slideIn .3s ease both}@keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.pulse-dot{width:8px;height:8px;border-radius:999px;background:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.18)}
+.pulse-dot.saving{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.18);animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.5}}
+.step-dot{width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;flex-shrink:0;border:2px solid #ddd5c2;background:#fff;color:#8a94a8}
+.step-item.done .step-dot{background:#065f46;border-color:#065f46;color:#fff}
+.step-item.current .step-dot{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 0 0 4px rgba(15,42,68,.15)}
+.step-item.current{background:#fff;border-color:var(--navy)!important;box-shadow:0 8px 20px -10px rgba(15,42,68,.3)}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.7rem .9rem;border-radius:12px;font-size:.9rem;font-weight:600;color:#b9c6da;transition:.15s;border:1px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:#fff;color:#0f2a44;font-weight:800;box-shadow:0 6px 16px -6px rgba(0,0,0,.4)}
+.nav-item.active .nav-ico{background:#0f2a44;color:#fff}
+.nav-ico{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.filter-pill{font-size:.82rem;font-weight:700;padding:.5rem 1rem;border-radius:999px;border:1.5px solid #ddd5c2;background:#fff;color:#5b6b85;cursor:pointer;transition:.15s}
+.filter-pill.active{background:#0f2a44;color:#fff;border-color:#0f2a44}
+.report-paper{background:#fff;max-width:820px;margin:0 auto;border-radius:6px;box-shadow:0 20px 60px -20px rgba(15,42,68,.35);overflow:hidden}
+.report-doc{font-family:Georgia,'Times New Roman',serif;color:#1a1a1a;line-height:1.75;font-size:15px;padding:56px 60px}
+.report-doc h1{font-family:Fraunces,Georgia,serif;color:#0f2a44;font-size:22px;font-weight:700;margin:2rem 0 1rem;padding-bottom:.5rem;border-bottom:3px solid #b8933f;text-transform:uppercase;letter-spacing:.02em}
+.report-doc h2{font-family:Fraunces,Georgia,serif;color:#15365c;font-size:17px;font-weight:700;margin:1.6rem 0 .7rem}
+.report-doc h3{font-size:15px;font-weight:700;color:#334155;margin:1.2rem 0 .5rem}
+.report-doc p{margin:.6rem 0;text-align:justify}
+.report-doc ul,.report-doc ol{margin:.6rem 0 .6rem 1.4rem}.report-doc li{margin:.3rem 0}
+.report-doc table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:13.5px;font-family:Inter}
+.report-doc th{background:#0f2a44;color:#fff;padding:.6rem .7rem;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+.report-doc td{border:1px solid #d9d0b8;padding:.6rem .7rem;vertical-align:top}
+.report-doc tr:nth-child(even) td{background:#faf8f1}
+.cover-rule{height:4px;background:linear-gradient(90deg,#0f2a44,#b8933f,#0f2a44);border-radius:999px;margin:1.2rem 0}
+.page-break{height:1px;background:#e8e0cd;margin:2.5rem 0;position:relative}.page-break::after{content:'—';position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:#fff;padding:0 12px;color:#c9c0a8}
+.toc-item{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px dotted #c9c0a8;font-family:Inter;font-size:.88rem}
+#toastRoot{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:.6rem;max-width:min(380px,calc(100vw - 32px))}
+.toast{background:#0f2a44;color:#fff;border-radius:14px;padding:.85rem 1rem;font-size:.87rem;font-weight:600;display:flex;gap:.7rem;align-items:flex-start;box-shadow:0 16px 32px -12px rgba(0,0,0,.5);animation:slideIn .3s ease;border-left:4px solid #b8933f}
+.toast.success{border-left-color:#10b981}.toast.error{border-left-color:#ef4444;background:#7f1d1d}.toast.warn{border-left-color:#f59e0b}
+.modal-backdrop{position:fixed;inset:0;background:rgba(11,33,56,.65);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;animation:fadeIn .2s ease}
+.modal-card{background:#fbf9f3;border-radius:20px;max-width:560px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);border:1px solid #e3dcc8}
+#previewOverlay{position:fixed;inset:0;z-index:90;background:rgba(11,33,56,.85);backdrop-filter:blur(8px);display:flex;flex-direction:column}
+.check-row{display:flex;gap:.75rem;padding:.7rem .8rem;border-radius:12px;border:1px solid #e8e0cd;background:#fff;font-size:.85rem}
+.progress-track{height:8px;background:#e8e0cd;border-radius:999px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#0f2a44,#1e4a7a);border-radius:999px;transition:width .5s ease}
+.progress-fill.gold{background:linear-gradient(90deg,#9a7a32,#c9a94f)}
+.score-ring{transform:rotate(-90deg)}.score-ring circle{transition:stroke-dashoffset .8s ease}
+.guide-h{font-family:Fraunces,serif;font-weight:700;color:#0f2a44}
+.kbd{font-family:'JetBrains Mono';font-size:.72rem;background:#0f2a44;color:#fff;padding:.15rem .45rem;border-radius:6px}
+#printArea{display:none}
+@media print{body>*{display:none!important}body::before{display:none!important}#printArea{display:block!important;position:static!important}.report-paper{box-shadow:none!important;max-width:100%!important}.report-doc{padding:0!important;font-size:12pt}#previewOverlay,#toastRoot,.modal-backdrop,#mobileNav{display:none!important}body{background:#fff!important}}
+@media(max-width:640px){.report-doc{padding:28px 22px;font-size:14px}}
+.line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gold-divider{height:3px;width:56px;background:linear-gradient(90deg,#b8933f,#ddc37a);border-radius:999px}
+select.field-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230f2a44' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .8rem center;padding-right:2.2rem}
+</style>
+</head>
+<body>
+<div class="relative z-10 flex min-h-screen">
+
+<!-- SIDEBAR -->
+<aside class="hidden lg:flex flex-col w-[290px] shrink-0 bg-navy-800 text-white sticky top-0 h-screen overflow-y-auto">
+<div class="p-6 pb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#c9a94f,#9a7a32);box-shadow:0 8px 20px -6px rgba(201,169,79,.6)">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0f2a44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/><path d="M22 10v6"/></svg>
+</div>
+<div><h1 class="font-serif font-bold text-[1.05rem] leading-tight">Attachment<br/>Report Builder</h1><p class="text-[.68rem] tracking-[.18em] uppercase text-gold-300 font-bold mt-1">Academic Edition</p></div>
+</div>
+</div>
+<nav class="px-4 space-y-1.5 mt-2">
+<button onclick="showView('dashboard')" data-nav="dashboard" class="nav-item active w-full text-left"><span class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>Dashboard</button>
+<button onclick="goMyReports()" data-nav="reports" class="nav-item w-full text-left"><span class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span>My Reports <span id="sideCount" class="ml-auto text-xs bg-white/15 px-2 py-0.5 rounded-full font-bold">0</span></button>
+<button onclick="openCreateModal()" class="nav-item w-full text-left"><span class="nav-ico" style="background:linear-gradient(135deg,#c9a94f,#9a7a32);color:#0f2a44"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>New Report</button>
+<button onclick="showView('guide')" data-nav="guide" class="nav-item w-full text-left"><span class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg></span>Writing Guide</button>
+<button onclick="showView('privacy')" data-nav="privacy" class="nav-item w-full text-left"><span class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>Privacy &amp; Data</button>
+</nav>
+<div class="mt-auto p-4 space-y-3">
+<div class="bg-white/10 border border-white/15 rounded-2xl p-4">
+<div class="flex items-center justify-between text-xs font-bold"><span class="text-white/80 uppercase tracking-wider">Local storage</span><span id="sideStoragePct" class="text-gold-300">0%</span></div>
+<div class="h-2 bg-white/15 rounded-full mt-2 overflow-hidden"><div id="sideStorageBar" class="h-full rounded-full transition-all" style="width:0%;background:linear-gradient(90deg,#c9a94f,#ddc37a)"></div></div>
+<p id="sideStorageText" class="text-[.72rem] text-white/60 mt-2">0 KB used · 100% on this device</p>
+</div>
+<div class="flex items-center gap-2.5 bg-emerald-500/15 border border-emerald-400/30 rounded-2xl p-3">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+<div><p class="text-xs font-800 font-bold text-emerald-200">Private by design</p><p class="text-[.7rem] text-emerald-200/70">No servers. No tracking.</p></div>
+</div>
+<p class="text-center text-[.68rem] text-white/40">Autosaves locally · v1.0 MVP</p>
+</div>
+</aside>
+
+<!-- MAIN -->
+<div class="flex-1 flex flex-col min-w-0 min-h-screen">
+<!-- TOPBAR -->
+<header class="sticky top-0 z-40 bg-[#fbf9f3]/90 backdrop-blur-lg border-b border-[#e3dcc8]">
+<div class="flex items-center gap-3 px-4 sm:px-6 lg:px-8 h-[68px]">
+<div class="lg:hidden flex items-center gap-2">
+<div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#c9a94f,#9a7a32)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f2a44" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></div>
+<span class="font-serif font-bold text-navy-800 text-sm leading-tight">Attachment<br/>Builder</span>
+</div>
+<div class="hidden lg:block"><h2 id="viewTitle" class="font-serif font-bold text-xl text-navy-800">Dashboard</h2><p id="viewSubtitle" class="text-xs text-slate-500 font-medium">Manage and build your attachment reports</p></div>
+<div class="flex-1"></div>
+<div id="saveStatus" class="hidden items-center gap-2 text-xs font-bold text-slate-600 bg-white border border-[#e3dcc8] rounded-full px-3 py-1.5"><span id="saveDot" class="pulse-dot"></span><span id="saveText">Saved</span></div>
+<button onclick="openCreateModal()" class="btn-gold !py-2.5 !px-4 text-sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg><span class="hidden sm:inline">New Report</span><span class="sm:hidden">New</span></button>
+</div>
+</header>
+
+<main class="flex-1 px-4 sm:px-6 lg:px-8 py-6 pb-28 lg:pb-10 max-w-[1200px] w-full mx-auto">
+
+<!-- DASHBOARD -->
+<section id="view-dashboard" class="space-y-6 fade-in">
+<div class="bg-navy-800 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lift">
+<div class="absolute inset-0 opacity-20" style="background:radial-gradient(600px 200px at 85% 10%,#c9a94f,transparent),radial-gradient(500px 220px at 10% 90%,#1e4a7a,transparent)"></div>
+<div class="relative flex flex-col md:flex-row md:items-center gap-6">
+<div class="flex-1">
+<p id="greetDate" class="text-gold-300 text-xs font-bold tracking-[.15em] uppercase">—</p>
+<h2 id="greetTitle" class="font-serif text-2xl sm:text-3xl font-bold mt-1">Good day, Scholar.</h2>
+<p class="text-white/70 text-sm mt-2 max-w-xl leading-relaxed">Build a structured, submission-ready field &amp; industrial attachment report — guided chapter by chapter, autosaved privately on this device.</p>
+<div class="flex flex-wrap gap-3 mt-5">
+<button onclick="openCreateModal()" class="btn-gold"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Create New Report</button>
+<button onclick="showView('guide')" class="btn-secondary !bg-transparent !text-white !border-white/30 hover:!bg-white/10">Writing Guide</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 w-full md:w-[300px] shrink-0">
+<div class="bg-white/10 border border-white/15 rounded-2xl p-4"><p class="text-3xl font-extrabold" id="statTotal">0</p><p class="text-[.72rem] uppercase tracking-wider text-white/60 font-bold mt-1">Total reports</p></div>
+<div class="bg-white/10 border border-white/15 rounded-2xl p-4"><p class="text-3xl font-extrabold text-gold-300" id="statWords">0</p><p class="text-[.72rem] uppercase tracking-wider text-white/60 font-bold mt-1">Words written</p></div>
+<div class="bg-white/10 border border-white/15 rounded-2xl p-4"><p class="text-3xl font-extrabold text-amber-300" id="statDrafts">0</p><p class="text-[.72rem] uppercase tracking-wider text-white/60 font-bold mt-1">Drafts</p></div>
+<div class="bg-white/10 border border-white/15 rounded-2xl p-4"><p class="text-3xl font-extrabold text-emerald-300" id="statDone">0</p><p class="text-[.72rem] uppercase tracking-wider text-white/60 font-bold mt-1">Completed</p></div>
+</div>
+</div>
+</div>
+
+<div id="emptyHero" class="hidden bg-white border-2 border-dashed border-[#c9c0a8] rounded-3xl p-8 sm:p-12 text-center shadow-card">
+<div class="w-20 h-20 mx-auto rounded-3xl flex items-center justify-center" style="background:linear-gradient(135deg,#eef3f9,#f5ebcf)"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0f2a44" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></div>
+<h3 class="font-serif text-2xl font-bold text-navy-800 mt-5">No reports yet — start your first</h3>
+<p class="text-slate-500 text-sm mt-2 max-w-lg mx-auto leading-relaxed">Your reports will live here with draft/completed status, progress and last-edited dates. Everything you type is autosaved privately in this browser. Nothing is pre-filled or invented.</p>
+<div class="grid sm:grid-cols-4 gap-3 mt-6 max-w-2xl mx-auto text-left">
+<div class="bg-paper border border-[#e3dcc8] rounded-2xl p-3"><p class="font-extrabold text-navy-800 text-sm">1. Create</p><p class="text-xs text-slate-500 mt-1">Name your report &amp; attachment</p></div>
+<div class="bg-paper border border-[#e3dcc8] rounded-2xl p-3"><p class="font-extrabold text-navy-800 text-sm">2. Guided steps</p><p class="text-xs text-slate-500 mt-1">10 chapters, autosaved</p></div>
+<div class="bg-paper border border-[#e3dcc8] rounded-2xl p-3"><p class="font-extrabold text-navy-800 text-sm">3. Check &amp; refine</p><p class="text-xs text-slate-500 mt-1">Validation + AI polish</p></div>
+<div class="bg-paper border border-[#e3dcc8] rounded-2xl p-3"><p class="font-extrabold text-navy-800 text-sm">4. Export</p><p class="text-xs text-slate-500 mt-1">DOCX · PDF · Print</p></div>
+</div>
+<button onclick="openCreateModal()" class="btn-primary mt-6 mx-auto">Create New Report</button>
+</div>
+
+<div id="recentWrap" class="hidden">
+<div class="flex items-center gap-3 mb-3"><h3 class="font-serif font-bold text-lg text-navy-800">Recently Edited</h3><div class="gold-divider"></div></div>
+<div id="recentRow" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+</div>
+
+<div class="bg-white border border-[#e3dcc8] rounded-3xl p-4 sm:p-5 shadow-card">
+<div class="flex flex-col xl:flex-row xl:items-center gap-3">
+<div class="flex items-center gap-3"><h3 class="font-serif font-bold text-lg text-navy-800 whitespace-nowrap">My Reports</h3><span id="reportCountBadge" class="text-xs font-bold bg-paper border border-[#e3dcc8] rounded-full px-2.5 py-1">0</span></div>
+<div class="flex flex-wrap items-center gap-2">
+<button onclick="setFilter('all')" data-filter="all" class="filter-pill active">All</button>
+<button onclick="setFilter('draft')" data-filter="draft" class="filter-pill">Drafts</button>
+<button onclick="setFilter('completed')" data-filter="completed" class="filter-pill">Completed</button>
+</div>
+<div class="flex-1"></div>
+<div class="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
+<div class="relative flex-1 xl:w-64"><svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="searchInput" oninput="onSearch(this.value)" placeholder="Search title, university, organization…" class="field-input !pl-9 !py-2.5 text-sm"/></div>
+<select onchange="onSort(this.value)" class="field-input !py-2.5 text-sm sm:w-52 font-semibold"><option value="updated">Sort: Last edited</option><option value="created">Sort: Newest created</option><option value="title">Sort: Title A–Z</option><option value="progress">Sort: Progress</option><option value="status">Sort: Status</option></select>
+</div>
+</div>
+<div id="reportsGrid" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-5"></div>
+<div id="noResults" class="hidden text-center py-10"><p class="font-bold text-navy-800">No reports match your search.</p><p class="text-sm text-slate-500 mt-1">Try a different keyword or clear the filter.</p><button onclick="clearSearch()" class="btn-ghost mx-auto mt-2">Clear search &amp; filters</button></div>
+</div>
+
+<div class="grid md:grid-cols-3 gap-4">
+<div class="bg-white border border-[#e3dcc8] rounded-2xl p-5 shadow-card flex gap-3"><div class="w-11 h-11 rounded-xl bg-navy-800 text-white flex items-center justify-center shrink-0 font-extrabold">10</div><div><p class="font-bold text-navy-800 text-sm">Guided 10-step wizard</p><p class="text-xs text-slate-500 mt-1 leading-relaxed">Student info → organization → 7 chapters → references. Never lose work with autosave.</p></div></div>
+<div class="bg-white border border-[#e3dcc8] rounded-2xl p-5 shadow-card flex gap-3"><div class="w-11 h-11 rounded-xl bg-gold-500 text-navy-800 flex items-center justify-center shrink-0 font-extrabold">✦</div><div><p class="font-bold text-navy-800 text-sm">Honest AI assistance</p><p class="text-xs text-slate-500 mt-1 leading-relaxed">Polishes only what you wrote. Refuses to invent facts on empty fields.</p></div></div>
+<div class="bg-white border border-[#e3dcc8] rounded-2xl p-5 shadow-card flex gap-3"><div class="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><p class="font-bold text-navy-800 text-sm">Private &amp; validated</p><p class="text-xs text-slate-500 mt-1 leading-relaxed">Report-check scoring plus DOCX / PDF / Print export, all offline-first.</p></div></div>
+</div>
+<p class="text-center text-xs text-slate-400">Your work autosaves locally · Press <span class="kbd">Ctrl S</span> to force-save anytime</p>
+</section>
+
+<!-- WIZARD -->
+<section id="view-wizard" class="hidden space-y-4">
+<div class="bg-white border border-[#e3dcc8] rounded-2xl p-4 shadow-card flex flex-col md:flex-row md:items-center gap-3">
+<button onclick="exitToDashboard()" class="btn-ghost shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5m7-7-7 7 7 7"/></svg>Exit</button>
+<input id="wizardTitle" oninput="onWizardTitle(this.value)" class="field-input font-serif font-bold !text-lg !border-transparent hover:!border-[#ddd5c2] focus:!border-navy-800 flex-1" placeholder="Untitled Attachment Report"/>
+<div class="flex items-center gap-2 shrink-0">
+<button onclick="openPreview()" class="btn-secondary !py-2 text-sm">Preview</button>
+<button onclick="saveDraftToast()" class="btn-primary !py-2 text-sm">Save Draft</button>
+</div>
+</div>
+<div class="bg-white border border-[#e3dcc8] rounded-2xl p-4 shadow-card">
+<div class="flex items-center justify-between mb-2"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Overall progress</p><p class="text-sm font-extrabold text-navy-800"><span id="wizardPct">0</span>% complete</p></div>
+<div class="progress-track"><div id="wizardBar" class="progress-fill" style="width:0%"></div></div>
+<div id="wizardMobileStepper" class="flex gap-2 mt-3 overflow-x-auto lg:hidden pb-1"></div>
+</div>
+<div class="grid lg:grid-cols-[280px_1fr] gap-4 items-start">
+<div class="hidden lg:block bg-white border border-[#e3dcc8] rounded-2xl p-3 shadow-card sticky top-[84px]"><p class="text-xs font-bold uppercase tracking-wider text-slate-500 px-2 pt-1 pb-2">Report steps</p><div id="wizardSteps" class="space-y-1.5"></div></div>
+<div class="space-y-4 min-w-0">
+<div id="wizardContent" class="fade-in"></div>
+<div class="bg-white border border-[#e3dcc8] rounded-2xl p-4 shadow-card flex items-center gap-3">
+<button id="wizBack" onclick="prevStep()" class="btn-secondary">← Back</button>
+<div class="flex-1 text-center"><p id="wizStepLabel" class="text-xs font-bold text-slate-500">Step 1 of 10</p></div>
+<button onclick="saveDraftToast()" class="btn-ghost hidden sm:inline-flex">Save Draft</button>
+<button id="wizNext" onclick="nextStep()" class="btn-primary">Next →</button>
+</div>
+</div>
+</div>
+</section>
+
+<!-- EDITOR -->
+<section id="view-editor" class="hidden space-y-4">
+<div class="bg-white border border-[#e3dcc8] rounded-2xl p-4 shadow-card flex flex-col gap-3">
+<div class="flex flex-wrap items-center gap-3">
+<button onclick="exitToDashboard()" class="btn-ghost shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5m7-7-7 7 7 7"/></svg><span class="hidden sm:inline">Dashboard</span></button>
+<div class="flex-1 min-w-[180px]"><input id="editorTitle" oninput="onWizardTitle(this.value)" class="font-serif font-bold text-lg bg-transparent border border-transparent hover:border-[#ddd5c2] focus:border-navy-800 rounded-xl px-2 py-1 w-full outline-none" placeholder="Untitled report"/></div>
+<span id="editorStatus"></span>
+</div>
+<div class="flex flex-wrap items-center gap-2">
+<div class="flex-1 min-w-[160px]"><div class="flex items-center justify-between text-[.7rem] font-bold text-slate-500 mb-1"><span>COMPLETION</span><span id="editorPct">0%</span></div><div class="progress-track"><div id="editorBar" class="progress-fill gold" style="width:0%"></div></div></div>
+<button onclick="openPreview()" class="btn-secondary !py-2 text-sm">Preview</button>
+<div class="relative"><button onclick="toggleExportMenu(event)" class="btn-secondary !py-2 text-sm">Export ▾</button><div id="exportMenu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-[#e3dcc8] rounded-2xl shadow-lift p-2 z-50">
+<button onclick="exportDocx()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-paper text-sm font-bold text-navy-800 flex items-center gap-2"><span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-extrabold">W</span>Download DOCX</button>
+<button onclick="exportPdf()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-paper text-sm font-bold text-navy-800 flex items-center gap-2"><span class="w-8 h-8 rounded-lg bg-red-100 text-red-800 flex items-center justify-center text-xs font-extrabold">PDF</span>Download PDF</button>
+<button onclick="printReport()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-paper text-sm font-bold text-navy-800 flex items-center gap-2"><span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-xs font-extrabold">⎙</span>Print report</button>
+<button onclick="exportBackupOne()" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-paper text-sm font-bold text-navy-800 flex items-center gap-2"><span class="w-8 h-8 rounded-lg bg-gold-100 text-gold-600 flex items-center justify-center text-xs font-extrabold">{ }</span>Backup JSON</button>
+</div></div>
+<button id="completeBtn" onclick="toggleComplete()" class="btn-gold !py-2 text-sm">Mark Complete</button>
+</div>
+<div class="flex lg:hidden gap-2 bg-paper border border-[#e3dcc8] rounded-xl p-1">
+<button onclick="setEditorTab('edit')" data-etab="edit" class="flex-1 text-sm font-bold py-2 rounded-lg bg-navy-800 text-white">Edit</button>
+<button onclick="setEditorTab('check')" data-etab="check" class="flex-1 text-sm font-bold py-2 rounded-lg text-slate-500">Check</button>
+<button onclick="setEditorTab('ai')" data-etab="ai" class="flex-1 text-sm font-bold py-2 rounded-lg text-slate-500">AI Assist</button>
+</div>
+</div>
+<div class="grid lg:grid-cols-[250px_1fr_340px] gap-4 items-start">
+<div id="editorOutlineWrap" class="bg-white border border-[#e3dcc8] rounded-2xl p-3 shadow-card lg:sticky lg:top-[84px]"><p class="text-xs font-bold uppercase tracking-wider text-slate-500 px-2 pt-1 pb-2 hidden lg:block">Sections — tap to edit</p><div id="editorOutline" class="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-1"></div></div>
+<div id="editorContent" class="min-w-0 fade-in"></div>
+<div class="space-y-4 lg:sticky lg:top-[84px]" id="editorSide">
+<div class="bg-white border border-[#e3dcc8] rounded-2xl shadow-card overflow-hidden">
+<div class="flex bg-paper border-b border-[#e3dcc8]"><button onclick="setSideTab('check')" data-stab="check" class="flex-1 text-sm font-extrabold py-3 text-navy-800 border-b-[3px] border-navy-800">Report Check</button><button onclick="setSideTab('ai')" data-stab="ai" class="flex-1 text-sm font-extrabold py-3 text-slate-400 border-b-[3px] border-transparent">✦ AI Assist</button></div>
+<div id="sideCheck" class="p-4"></div>
+<div id="sideAi" class="p-4 hidden space-y-3">
+<div class="bg-gold-50 border border-gold-300 rounded-xl p-3 text-xs leading-relaxed text-[#6b5a26]"><strong>Honest AI:</strong> enhances only text you wrote. Empty fields are never filled with invented facts.</div>
+<label class="field-label">Target field</label>
+<select id="aiTargetSide" onchange="sideAiTargetChange()" class="field-input text-sm"></select>
+<div class="bg-paper border border-[#e3dcc8] rounded-xl p-3"><p class="text-[.7rem] font-bold uppercase tracking-wider text-slate-500 mb-1">Your current text</p><p id="aiOriginalSide" class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Select a field above.</p></div>
+<div class="grid grid-cols-2 gap-2">
+<button onclick="sideAiAction('grammar')" class="btn-secondary !py-2 !px-2 text-xs justify-center">Fix Grammar</button>
+<button onclick="sideAiAction('academic')" class="btn-secondary !py-2 !px-2 text-xs justify-center">Academic Tone</button>
+<button onclick="sideAiAction('expand')" class="btn-secondary !py-2 !px-2 text-xs justify-center">Expand</button>
+<button onclick="sideAiAction('condense')" class="btn-secondary !py-2 !px-2 text-xs justify-center">Condense</button>
+<button onclick="sideAiAction('b2p')" class="btn-secondary !py-2 !px-2 text-xs justify-center">Bullets → Para</button>
+<button onclick="sideAiAction('p2b')" class="btn-secondary !py-2 !px-2 text-xs justify-center">Para → Bullets</button>
+</div>
+<div id="aiResultSide" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3"></div>
+</div>
+</div>
+<div class="bg-navy-800 text-white rounded-2xl p-4 shadow-card"><p class="text-xs font-bold uppercase tracking-wider text-gold-300">Privacy note</p><p class="text-xs text-white/70 mt-1 leading-relaxed">This report exists only in your browser. Export files are generated on-device — nothing is uploaded.</p></div>
+</div>
+</div>
+</section>
+
+<!-- GUIDE -->
+<section id="view-guide" class="hidden space-y-5">
+<div class="bg-white border border-[#e3dcc8] rounded-3xl overflow-hidden shadow-card">
+<img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80&auto=format&fit=crop" alt="Graduation" class="w-full h-48 sm:h-64 object-cover" loading="lazy" onerror="this.style.display='none'"/>
+<div class="p-6 sm:p-8"><p class="text-xs font-bold tracking-[.18em] uppercase text-gold-600">Academic writing guide</p><h2 class="font-serif text-2xl sm:text-3xl font-bold text-navy-800 mt-1">How to write a strong attachment report</h2><p class="text-sm text-slate-500 mt-2 max-w-2xl leading-relaxed">Follow your institution's format first. This guide explains what belongs in each chapter, typical lengths, and mistakes to avoid. Write in past tense, first person sparingly, and only state what you personally observed or did.</p></div>
+</div>
+<div class="grid md:grid-cols-2 gap-4" id="guideCards"></div>
+<div class="bg-navy-800 text-white rounded-3xl p-6 sm:p-8 grid md:grid-cols-3 gap-6">
+<div><h4 class="font-serif font-bold text-gold-300">Formatting standards</h4><ul class="text-sm text-white/75 mt-3 space-y-2 leading-relaxed"><li>• A4, 1.5 spacing, 12pt serif body</li><li>• Numbered chapters &amp; pages</li><li>• Tables labelled above, figures below</li><li>• Formal, past-tense language</li></ul></div>
+<div><h4 class="font-serif font-bold text-gold-300">Evidence to keep</h4><ul class="text-sm text-white/75 mt-3 space-y-2 leading-relaxed"><li>• Daily logbook signed by supervisor</li><li>• Photos / samples (with permission)</li><li>• Project outputs &amp; appraisals</li><li>• Attendance &amp; letter of completion</li></ul></div>
+<div><h4 class="font-serif font-bold text-gold-300">Common mistakes</h4><ul class="text-sm text-white/75 mt-3 space-y-2 leading-relaxed"><li>• Vague duties ("I did various tasks")</li><li>• Copying the company brochure</li><li>• No challenges or reflection</li><li>• Missing dates, names &amp; outcomes</li></ul></div>
+</div>
+</section>
+
+<!-- PRIVACY -->
+<section id="view-privacy" class="hidden space-y-5">
+<div class="bg-white border border-[#e3dcc8] rounded-3xl p-6 sm:p-8 shadow-card">
+<div class="flex items-center gap-4"><div class="w-14 h-14 rounded-2xl bg-emerald-700 text-white flex items-center justify-center shrink-0"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><h2 class="font-serif text-2xl font-bold text-navy-800">Student privacy, guaranteed by architecture</h2><p class="text-sm text-slate-500 mt-1">No accounts · No servers · No analytics on your content</p></div></div>
+<div class="grid md:grid-cols-3 gap-4 mt-6">
+<div class="bg-paper border border-[#e3dcc8] rounded-2xl p-4"><p class="font-bold text-navy-800 text-sm">100% local storage</p><p class="text-xs text-slate-500 mt-1 leading-relaxed">Reports are stored in your browser's local storage on this device only. Closing the tab never loses work thanks to autosave.</p></div>
+<div class="bg-paper border border-[#e3dcc8] rounded-2xl p-4"><p class="font-bold text-navy-800 text-sm">On-device AI &amp; export</p><p class="text-xs text-slate-500 mt-1 leading-relaxed">Writing assistance runs as local text rules — your words are never sent anywhere. DOCX/PDF files are generated in-browser.</p></div>
+<div class="bg-paper border border-[#e3dcc8] rounded-2xl p-4"><p class="font-bold text-navy-800 text-sm">You control deletion</p><p class="text-xs text-slate-500 mt-1 leading-relaxed">Delete one report or wipe everything instantly. Clearing browser data also removes reports — keep backups.</p></div>
+</div>
+<div class="mt-6 bg-navy-800 text-white rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+<div class="flex-1"><p class="font-bold">Storage on this device</p><p id="privacyStorage" class="text-sm text-white/60 mt-1">—</p><div class="h-2.5 bg-white/15 rounded-full mt-3 overflow-hidden"><div id="privacyBar" class="h-full rounded-full" style="width:0%;background:linear-gradient(90deg,#c9a94f,#ddc37a)"></div></div></div>
+<div class="flex flex-wrap gap-2">
+<button onclick="exportAllBackup()" class="btn-gold !text-sm">Download Backup</button>
+<label class="btn-secondary !bg-transparent !text-white !border-white/30 cursor-pointer !text-sm">Import Backup<input type="file" accept=".json" class="hidden" onchange="importBackup(event)"/></label>
+<button onclick="confirmWipe()" class="btn-danger !text-sm">Delete All</button>
+</div>
+</div>
+<div class="mt-4 text-xs text-slate-500 leading-relaxed bg-gold-50 border border-gold-300 rounded-2xl p-4"><strong class="text-navy-800">Shared computer tip:</strong> download a JSON backup and DOCX/PDF copies, then delete your reports from this browser before signing off. Never type passwords or sensitive IDs beyond what your institution requires.</div>
+</div>
+</section>
+
+</main>
+
+<!-- MOBILE NAV -->
+<nav id="mobileNav" class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-[#e3dcc8] px-2 py-2 grid grid-cols-4 gap-1">
+<button onclick="showView('dashboard')" data-nav="dashboard" class="flex flex-col items-center gap-1 py-1.5 rounded-xl text-navy-800 font-bold text-[.68rem]"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Home</button>
+<button onclick="openCreateModal()" class="flex flex-col items-center gap-1 py-1.5 rounded-xl text-gold-600 font-bold text-[.68rem]"><span class="w-9 h-9 -mt-5 rounded-full flex items-center justify-center text-navy-800 shadow-lift" style="background:linear-gradient(135deg,#c9a94f,#9a7a32)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>New</button>
+<button onclick="showView('guide')" data-nav="guide" class="flex flex-col items-center gap-1 py-1.5 rounded-xl text-slate-500 font-bold text-[.68rem]"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg>Guide</button>
+<button onclick="showView('privacy')" data-nav="privacy" class="flex flex-col items-center gap-1 py-1.5 rounded-xl text-slate-500 font-bold text-[.68rem]"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Privacy</button>
+</nav>
+</div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+<div id="previewOverlay" class="hidden">
+<div class="flex items-center gap-3 px-4 sm:px-6 py-3 bg-[#0b2138] text-white border-b border-white/10">
+<button onclick="closePreview()" class="btn-secondary !bg-transparent !text-white !border-white/25 !py-2 text-sm">← Close</button>
+<p id="previewTitle" class="font-serif font-bold truncate flex-1 text-sm sm:text-base">Preview</p>
+<div class="hidden sm:flex items-center gap-2 text-xs text-white/60 font-semibold"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>Live preview · A4</div>
+<button onclick="exportDocx()" class="btn-gold !py-2 text-sm !px-3">DOCX</button>
+<button onclick="exportPdf()" class="btn-secondary !bg-white !py-2 text-sm !px-3">PDF</button>
+<button onclick="printReport()" class="btn-secondary !bg-transparent !text-white !border-white/25 !py-2 text-sm !px-3">Print</button>
+</div>
+<div class="flex-1 overflow-y-auto p-4 sm:p-8"><div id="previewPaper" class="report-paper"><div class="report-doc" id="previewDoc"></div></div><p class="text-center text-white/50 text-xs mt-4">Generated on-device · Only your entered content appears — nothing is invented</p></div>
+</div>
+<div id="printArea"><div class="report-paper" style="box-shadow:none"><div class="report-doc" id="printDoc"></div></div></div>
+
+<script>
+/* ============ UTILITIES ============ */
+const KEY='arb_reports_v1';
+const $=id=>document.getElementById(id);
+function uid(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function escAttr(s){return esc(s).replace(/'/g,'&#39;')}
+function countWords(t){t=String(t||'').trim();if(!t)return 0;return t.split(/\s+/).filter(Boolean).length}
+function fmtDate(ts){if(!ts)return '—';return new Date(ts).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}
+function fmtTime(ts){if(!ts)return '';return new Date(ts).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}
+function timeAgo(ts){if(!ts)return '—';const s=Math.floor((Date.now()-ts)/1000);if(s<60)return 'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';if(s<86400*7)return Math.floor(s/86400)+'d ago';return fmtDate(ts)}
+function sanitizeFn(s){return String(s||'Attachment-Report').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-').slice(0,60)||'Attachment-Report'}
+function getPath(o,p){return p.split('.').reduce((a,k)=>a?.[k],o)}
+function setPath(o,p,v){const ks=p.split('.');let c=o;for(let i=0;i<ks.length-1;i++){if(c[ks[i]]==null)c[ks[i]]=/^\d+$/.test(ks[i+1])?[]:{};c=c[ks[i]]}c[ks[ks.length-1]]=v}
+
+/* ============ STATE ============ */
+let reports=[];let activeReportId=null;let wizardStep=0;let editorSection=0;
+let dashFilter='all',dashSort='updated',dashQuery='';
+let sideTab='check',editorTab='edit',saveTimer=null,progTimer=null,checkTimer=null;
+let aiSideResult=null,aiModalResult=null,previewId=null;
+
+const STEPS=[
+{id:'student',t:'Student Information',d:'Your academic identity & attachment period',i:'◈'},
+{id:'organization',t:'Organization / Facility',d:'Where you were attached & who supervised you',i:'⬣'},
+{id:'introduction',t:'Introduction',d:'Background, objectives & scope of attachment',i:'✎'},
+{id:'structure',t:'Organizational Structure',d:'Departments, leadership & organogram',i:'◫'},
+{id:'activities',t:'Activities & Duties',d:'Weekly log of tasks performed',i:'☰'},
+{id:'projects',t:'Projects & Assignments',d:'Specific work you delivered',i:'⬔'},
+{id:'skills',t:'Skills & Learning',d:'Technical, soft skills & reflection',i:'✦'},
+{id:'challenges',t:'Challenges & Solutions',d:'Problems faced & how you solved them',i:'⚑'},
+{id:'conclusion',t:'Conclusion & Recommendations',d:'Summary & advice for stakeholders',i:'✓'},
+{id:'references',t:'References & Acronyms',d:'Sources cited & abbreviations used',i:'❝'}];
+const ORG_TYPES=['Government Ministry / Agency','Hospital / Health Facility','Bank / Financial Institution','School / Educational Institution','Manufacturing / Factory','ICT / Technology Firm','NGO / Non-Profit','Construction / Engineering Firm','Media / Communications','Agriculture / Agribusiness','Telecommunications','Energy / Utilities','Private Company (Other)','Public Institution (Other)'];
+const LEVELS=['Year 1','Year 2','Year 3','Year 4','Year 5','Diploma Year 1','Diploma Year 2','Diploma Year 3','Postgraduate','Other'];
+
+function emptyData(){return{
+student:{fullName:'',regNumber:'',university:'',faculty:'',department:'',program:'',level:'',academicYear:'',periodStart:'',periodEnd:'',facultySupervisor:'',studentEmail:'',studentPhone:''},
+organization:{name:'',type:'',sector:'',address:'',city:'',country:'',contactPerson:'',contactRole:'',contactEmail:'',contactPhone:'',website:'',about:''},
+introduction:{background:'',objectives:[''],scope:''},
+structure:{overview:'',departments:[],leadership:'',organogram:''},
+activities:{summary:'',weekly:[]},
+projects:{items:[]},
+skills:{technical:[''],soft:[''],reflection:''},
+challenges:{items:[]},
+conclusion:{summary:'',recommendations:[''],future:''},
+references:{refs:[''],acronyms:[]}}}
+function createReport(title,uni='',prog=''){const d=emptyData();if(uni)d.student.university=uni;if(prog)d.student.program=prog;return{id:uid(),title:title||'Untitled Attachment Report',status:'draft',createdAt:Date.now(),updatedAt:Date.now(),data:d}}
+function getActive(){return reports.find(r=>r.id===activeReportId)||null}
+function getById(id){return reports.find(r=>r.id===id)||null}
+function load(){try{reports=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){reports=[]}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(reports));updateStorageUI()}catch(e){toast('Storage full — export a backup and delete old reports.','error')}}
+
+/* ============ TOAST & MODAL ============ */
+function toast(msg,type='info',ms=3400){const t=document.createElement('div');t.className='toast '+type;const ic=type==='success'?'✓':type==='error'?'!':type==='warn'?'⚠':'ℹ';t.innerHTML='<span class="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center shrink-0 font-extrabold text-xs">'+ic+'</span><span>'+esc(msg)+'</span>';$('toastRoot').appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(20px)';setTimeout(()=>t.remove(),300)},ms)}
+function openModal(html){$('modalRoot').innerHTML='<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal-card p-6 sm:p-7">'+html+'</div></div>'}
+function closeModal(){$('modalRoot').innerHTML=''}
+
+/* ============ NAVIGATION ============ */
+const TITLES={dashboard:['Dashboard','Manage and build your attachment reports'],wizard:['Report Wizard','Step-by-step guided creation · autosaved'],editor:['Report Editor','Edit any section · validate · export'],guide:['Writing Guide','Academic standards & chapter advice'],privacy:['Privacy & Data','Local-first control of your work']};
+function showView(v){['dashboard','wizard','editor','guide','privacy'].forEach(x=>$('view-'+x).classList.add('hidden'));$('view-'+v).classList.remove('hidden');document.querySelectorAll('[data-nav]').forEach(b=>b.classList.remove('active'));document.querySelectorAll('[data-nav="'+v+'"]').forEach(b=>b.classList.add('active'));if(v==='dashboard')document.querySelectorAll('[data-nav="reports"]').forEach(b=>b.classList.remove('active'));$('viewTitle').textContent=TITLES[v][0];$('viewSubtitle').textContent=TITLES[v][1];const showSave=(v==='wizard'||v==='editor');$('saveStatus').classList.toggle('hidden',!showSave);$('saveStatus').classList.toggle('flex',showSave);if(v==='dashboard')renderDashboard();if(v==='privacy')updateStorageUI();window.scrollTo({top:0,behavior:'smooth'})}
+function goMyReports(){showView('dashboard');setTimeout(()=>{document.querySelector('#reportsGrid')?.scrollIntoView({behavior:'smooth',block:'start'})},100)}
+function exitToDashboard(){persist();showView('dashboard')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closePreview();$('exportMenu')?.classList.add('hidden')}if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();persist();showSavedNow();toast('All changes saved locally.','success')}});
+document.addEventListener('click',e=>{if(!e.target.closest('#exportMenu')&&!e.target.closest('[onclick*="toggleExportMenu"]'))$('exportMenu')?.classList.add('hidden')});
+
+/* ============ AUTOSAVE ============ */
+function scheduleAutosave(){$('saveDot')?.classList.add('saving');const st=$('saveText');if(st)st.textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>{persist();showSavedNow();queueProgress()},700)}
+function showSavedNow(){$('saveDot')?.classList.remove('saving');const st=$('saveText');if(st)st.textContent='Saved · '+fmtTime(Date.now())}
+function queueProgress(){clearTimeout(progTimer);progTimer=setTimeout(()=>{updateProgressUI();queueCheckRefresh()},350)}
+function saveDraftToast(){persist();showSavedNow();updateProgressUI();toast('Draft saved — all entered information preserved.','success')}
+
+/* ============ PROGRESS & CHECKS ============ */
+function stepScore(r,i){const d=r.data;const nz=v=>String(v||'').trim()?1:0;const W=t=>countWords(t||'');
+try{switch(i){
+case 0:{const s=d.student;const f=[s.fullName,s.regNumber,s.university,s.department,s.program,s.periodStart,s.periodEnd].map(nz);return f.reduce((a,b)=>a+b,0)/f.length}
+case 1:{const o=d.organization;const f=[o.name,o.address,o.contactPerson].map(nz);return (f.reduce((a,b)=>a+b,0)+(W(o.about)>=30?1:W(o.about)/30))/4}
+case 2:{const b=W(d.introduction.background),o=d.introduction.objectives.filter(x=>x.trim()).length,s=W(d.introduction.scope);return Math.min(b/100,1)*.5+Math.min(o/3,1)*.3+Math.min(s/40,1)*.2}
+case 3:{const o=W(d.structure.overview),dp=d.structure.departments.filter(x=>x.name.trim()).length,l=W(d.structure.leadership);return Math.min(o/60,1)*.5+Math.min(dp/2,1)*.3+Math.min(l/30,1)*.2}
+case 4:{const s=W(d.activities.summary),w=d.activities.weekly.filter(x=>x.tasks.trim()||x.week.trim()).length;return Math.min(s/80,1)*.4+Math.min(w/3,1)*.6}
+case 5:{const p=d.projects.items.filter(x=>x.title.trim());return Math.min(p.length/2,1)}
+case 6:{const t=d.skills.technical.filter(x=>x.trim()).length,s=d.skills.soft.filter(x=>x.trim()).length,rf=W(d.skills.reflection);return Math.min(t/3,1)*.3+Math.min(s/3,1)*.3+Math.min(rf/60,1)*.4}
+case 7:{const c=d.challenges.items.filter(x=>x.challenge.trim());const ws=d.challenges.items.filter(x=>x.challenge.trim()&&x.solution.trim()).length;return Math.min(c.length/2,1)*.6+Math.min(ws/2,1)*.4}
+case 8:{const s=W(d.conclusion.summary),rc=d.conclusion.recommendations.filter(x=>x.trim()).length,f=W(d.conclusion.future);return Math.min(s/80,1)*.5+Math.min(rc/3,1)*.3+Math.min(f/30,1)*.2}
+case 9:{const rf=d.references.refs.filter(x=>x.trim()).length,ac=d.references.acronyms.filter(x=>x.abbr.trim()).length;return Math.min(rf/3,1)*.6+Math.min(ac/2,1)*.4}
+}}catch(e){return 0}return 0}
+function calcProgress(r){const per=[];for(let i=0;i<10;i++)per.push(stepScore(r,i));return{pct:Math.round(per.reduce((a,b)=>a+b,0)/10*100),per}}
+function totalWords(r){const d=r.data;const all=[d.organization.about,d.introduction.background,d.introduction.scope,d.structure.overview,d.structure.leadership,d.structure.organogram,d.activities.summary,d.skills.reflection,d.conclusion.summary,d.conclusion.future,d.introduction.objectives.join(' '),d.conclusion.recommendations.join(' '),d.references.refs.join(' '),d.activities.weekly.map(w=>w.tasks).join(' '),d.projects.items.map(p=>p.description+' '+p.outcome).join(' '),d.challenges.items.map(c=>c.challenge+' '+c.solution+' '+c.lesson).join(' ')].join(' ');return countWords(all)}
+function runChecks(r){const d=r.data,s=d.student,o=d.organization;const C=[];const add=(sec,label,status,detail)=>C.push({sec,label,status,detail});
+add(0,'Report has a working title',r.title&&r.title!=='Untitled Attachment Report'?'pass':'warn',r.title||'Add a descriptive title');
+add(0,'Student identity complete',(s.fullName.trim()&&s.regNumber.trim())?'pass':'fail','Full name + registration number are required');
+add(0,'Institution & programme',(s.university.trim()&&s.department.trim())?'pass':'fail','University and department/faculty required');
+add(0,'Attachment period valid',(s.periodStart&&s.periodEnd)?(s.periodStart<=s.periodEnd?'pass':'fail'):'fail',s.periodStart&&s.periodEnd?(s.periodStart<=s.periodEnd?s.periodStart+' → '+s.periodEnd:'Start date is after end date'):'Enter start and end dates');
+add(1,'Organization identified',(o.name.trim()&&o.address.trim())?'pass':'fail','Organization name + address required');
+add(1,'Onsite supervisor named',o.contactPerson.trim()?'pass':'warn','Name of your field supervisor strengthens credibility');
+const ib=countWords(d.introduction.background);add(2,'Introduction background ≥ 80 words',ib>=80?'pass':ib>=30?'warn':'fail',ib+' words — describe purpose and context of attachment');
+add(2,'At least 3 objectives',d.introduction.objectives.filter(x=>x.trim()).length>=3?'pass':'warn',d.introduction.objectives.filter(x=>x.trim()).length+' objective(s) listed');
+const so=countWords(d.structure.overview);add(3,'Structure overview ≥ 50 words',so>=50?'pass':so>0?'warn':'fail',so+' words');
+add(3,'Departments described',d.structure.departments.filter(x=>x.name.trim()).length>=1?'pass':'warn',d.structure.departments.filter(x=>x.name.trim()).length+' department(s)');
+const as=countWords(d.activities.summary),wl=d.activities.weekly.filter(x=>x.tasks.trim()).length;add(4,'Activities documented',(as>=60||wl>=2)?'pass':(as>0||wl>0)?'warn':'fail',as+' words · '+wl+' weekly log(s)');
+add(5,'Projects / assignments',d.projects.items.filter(x=>x.title.trim()&&x.description.trim()).length>=1?'pass':'warn',d.projects.items.filter(x=>x.title.trim()).length+' project(s)');
+const tr=d.skills.technical.filter(x=>x.trim()).length,sr=d.skills.soft.filter(x=>x.trim()).length,rf=countWords(d.skills.reflection);add(6,'Skills & reflection',(tr>=2&&sr>=2&&rf>=40)?'pass':'warn',tr+' technical · '+sr+' soft · '+rf+'w reflection');
+add(7,'Challenges with solutions',d.challenges.items.filter(x=>x.challenge.trim()&&x.solution.trim()).length>=1?'pass':'warn',d.challenges.items.filter(x=>x.challenge.trim()).length+' challenge(s)');
+const cs=countWords(d.conclusion.summary),rc=d.conclusion.recommendations.filter(x=>x.trim()).length;add(8,'Conclusion & recommendations',(cs>=60&&rc>=2)?'pass':'warn',cs+' words · '+rc+' recommendation(s)');
+add(9,'References & acronyms',d.references.refs.filter(x=>x.trim()).length>=2?'pass':'warn',d.references.refs.filter(x=>x.trim()).length+' reference(s) · '+d.references.acronyms.filter(x=>x.abbr.trim()).length+' acronym(s)');
+const score=Math.round((C.filter(c=>c.status==='pass').length+C.filter(c=>c.status==='warn').length*.5)/C.length*100);
+return{score,checks:C,words:totalWords(r)}}
+function queueCheckRefresh(){clearTimeout(checkTimer);checkTimer=setTimeout(()=>{if(!$('view-editor').classList.contains('hidden'))renderCheckPanel()},600)}
+
+/* ============ FIELD BUILDERS ============ */
+function ti(label,path,val,ph='',req=false,hint='',type='text'){return '<div class="field-group"><label class="field-label">'+label+(req?' <span class="req">*</span>':'')+'</label><input type="'+type+'" data-path="'+path+'" value="'+escAttr(val||'')+'" placeholder="'+escAttr(ph)+'" oninput="onFieldInput(this)" class="field-input"/>'+(hint?'<p class="field-hint">'+hint+'</p>':'')+'</div>'}
+function si(label,path,val,opts,req=false,hint=''){return '<div class="field-group"><label class="field-label">'+label+(req?' <span class="req">*</span>':'')+'</label><select data-path="'+path+'" onchange="onFieldInput(this)" class="field-input"><option value="">Select…</option>'+opts.map(o=>'<option value="'+escAttr(o)+'"'+(val===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>'+(hint?'<p class="field-hint">'+hint+'</p>':'')+'</div>'}
+function li(label,path,val,ph='',req=false,hint='',rows=6){const wc=countWords(val||'');return '<div class="field-group md:col-span-2"><div class="flex flex-wrap items-center justify-between gap-2 mb-2"><label class="field-label !mb-0">'+label+(req?' <span class="req">*</span>':'')+'</label><div class="flex items-center gap-2"><span class="word-badge" data-wc-for="'+path+'">'+wc+' words</span><button type="button" onclick="openAiModal(\''+path+'\')" class="ai-inline-btn">✦ Enhance</button></div></div><div class="toolbar"><button onclick="formatText(\''+path+'\',\'bold\')" title="Bold">B</button><button onclick="formatText(\''+path+'\',\'italic\')" title="Italic"><i>I</i></button><button onclick="formatText(\''+path+'\',\'h\')" title="Heading">H</button><button onclick="formatText(\''+path+'\',\'bullet\')" title="Bullets">• List</button><button onclick="formatText(\''+path+'\',\'number\')" title="Numbered">1. List</button><button onclick="formatText(\''+path+'\',\'clear\')" title="Clear">Clear</button></div><textarea data-path="'+path+'" rows="'+rows+'" placeholder="'+escAttr(ph)+'" oninput="onFieldInput(this)" class="field-textarea">'+esc(val||'')+'</textarea>'+(hint?'<p class="field-hint">'+hint+'</p>':'')+'</div>'}
+function strList(label,path,arr,ph,btn,hint=''){const rows=(arr||[]).map((v,i)=>'<div class="dynamic-row"><span class="row-num">'+(i+1)+'</span><input data-path="'+path+'.'+i+'" value="'+escAttr(v||'')+'" placeholder="'+escAttr(ph)+'" oninput="onFieldInput(this)" class="field-input flex-1"/><button onclick="removeListItem(\''+path+'\','+i+')" class="icon-btn-danger" title="Remove">×</button></div>').join('');return '<div class="field-group md:col-span-2"><label class="field-label">'+label+'</label><div class="space-y-2">'+(rows||'<p class="empty-list-note">No items yet — add your first below.</p>')+'</div><button onclick="addListItem(\''+path+'\',\'string\')" class="add-btn">+ '+btn+'</button>'+(hint?'<p class="field-hint">'+hint+'</p>':'')+'</div>'}
+function getStepHTML(i,r){const d=r.data,s=d.student,o=d.organization;
+const head=(n,t,sub)=>'<div class="bg-gradient-to-r from-navy-800 to-navy-600 text-white rounded-2xl p-5 shadow-card"><div class="flex items-center gap-3"><span class="w-11 h-11 rounded-xl bg-gold-500 text-navy-800 font-extrabold flex items-center justify-center text-lg shrink-0">'+n+'</span><div><h3 class="font-serif font-bold text-lg leading-tight">'+t+'</h3><p class="text-white/70 text-xs mt-0.5">'+sub+'</p></div><span class="ml-auto text-xs font-bold bg-white/15 rounded-full px-3 py-1 whitespace-nowrap">Step '+n+' / 10</span></div></div>';
+const grid=c=>'<div class="grid md:grid-cols-2 gap-4">'+c+'</div>';
+if(i===0)return head(1,'Student Information','Exactly as on your academic records — used for the cover page.')+grid(
+ti('Full name','data.student.fullName',s.fullName,'Your full name as on student records',true)+
+ti('Registration / matric number','data.student.regNumber',s.regNumber,'As issued by your university',true)+
+ti('University / institution','data.student.university',s.university,'Your university name',true)+
+ti('Faculty / school','data.student.faculty',s.faculty,'e.g., Faculty of Engineering')+
+ti('Department','data.student.department',s.department,'Your department',true)+
+ti('Programme of study','data.student.program',s.program,'e.g., BSc Computer Science')+
+si('Level / year of study','data.student.level',s.level,LEVELS)+
+ti('Academic year','data.student.academicYear',s.academicYear,'e.g., 2025/2026')+
+ti('Attachment start date','data.student.periodStart',s.periodStart,'',true,'','date')+
+ti('Attachment end date','data.student.periodEnd',s.periodEnd,'',true,'','date')+
+ti('Faculty supervisor','data.student.facultySupervisor',s.facultySupervisor,'Name of your university supervisor')+
+ti('Student email','data.student.studentEmail',s.studentEmail,'Your institutional email','', '','email'));
+if(i===1)return head(2,'Organization / Facility Details','Factual details of your placement — verify spelling with official sources.')+grid(
+ti('Organization name','data.organization.name',o.name,'Official name of the organization',true)+
+si('Organization type','data.organization.type',o.type,ORG_TYPES)+
+ti('Sector / industry','data.organization.sector',o.sector,'e.g., Healthcare, Banking, Manufacturing')+
+ti('Website (if any)','data.organization.website',o.website,'Official website address')+
+ti('Physical address','data.organization.address',o.address,'Street / plot address',true)+
+ti('City / town','data.organization.city',o.city,'City or town')+
+ti('Country','data.organization.country',o.country,'Country')+
+ti('Onsite supervisor name','data.organization.contactPerson',o.contactPerson,'Person who supervised you daily',true)+
+ti('Supervisor role / title','data.organization.contactRole',o.contactRole,'Their job title')+
+ti('Supervisor email','data.organization.contactEmail',o.contactEmail,'Official contact email','','','email')+
+ti('Supervisor phone','data.organization.contactPhone',o.contactPhone,'Official contact phone','','','tel')+
+li('About the organization','data.organization.about',o.about,'What does the organization do? Its mandate, services, size — in your own words based on what you observed and official sources. (Aim 80+ words)',false,'Write only what you verified. Do not copy long passages — summarize.'));
+if(i===2)return head(3,'Introduction','Chapter One — background, objectives and scope.')+grid(
+li('1.1 Background of the attachment','data.introduction.background',d.introduction.background,'Why is industrial attachment part of your programme? When and where did yours take place, and what did you hope to achieve? (Aim 100+ words)',true,'Past tense. State facts: dates, place, programme requirement.')+
+strList('1.2 Objectives of the attachment','data.introduction.objectives',d.introduction.objectives,'One specific objective, e.g., area you aimed to learn','Add objective','List at least 3 specific, realistic objectives you set or were given.')+
+li('1.3 Scope of the report','data.introduction.scope',d.introduction.scope,'What does this report cover — and what does it not cover? Mention departments, duration and limits.',false,'Defines boundaries so readers know what to expect.'));
+if(i===3){const deps=(d.structure.departments||[]).map((x,idx)=>'<div class="bg-paper border border-[#e3dcc8] rounded-xl p-3 grid sm:grid-cols-2 gap-2"><input data-path="data.structure.departments.'+idx+'.name" value="'+escAttr(x.name||'')+'" placeholder="Department / unit name" oninput="onFieldInput(this)" class="field-input"/><div class="flex gap-2"><input data-path="data.structure.departments.'+idx+'.function" value="'+escAttr(x.function||'')+'" placeholder="Its role / what it does" oninput="onFieldInput(this)" class="field-input flex-1"/><button onclick="removeListItem(\'data.structure.departments\','+idx+')" class="icon-btn-danger">×</button></div></div>').join('');
+return head(4,'Organizational Structure','Chapter Two — how the organization is arranged.')+grid(
+li('2.1 Overview of the structure','data.structure.overview',d.structure.overview,'Describe how the organization is structured — levels of authority and how units relate. (Aim 60+ words)',false,'Base this on the real organogram and your observation.')+
+'<div class="field-group md:col-span-2"><label class="field-label">2.2 Departments / units you encountered</label><div class="space-y-2">'+(deps||'<p class="empty-list-note">No departments added yet.</p>')+'</div><button onclick="addListItem(\'data.structure.departments\',\'department\')" class="add-btn">+ Add department</button><p class="field-hint">Only include units you actually interacted with or verified.</p></div>'+
+li('2.3 Leadership & supervision','data.structure.leadership',d.structure.leadership,'Who led the units you worked in? How were you supervised and assigned work?')+
+li('2.4 Organogram description','data.structure.organogram',d.structure.organogram,'Describe the reporting line from top management down to your position (e.g., Director → Manager → Supervisor → Attaché).'))}
+if(i===4){const wk=(d.activities.weekly||[]).map((w,idx)=>'<div class="bg-paper border border-[#e3dcc8] rounded-xl p-3 space-y-2"><div class="flex items-center gap-2"><span class="row-num !mt-0">'+(idx+1)+'</span><input data-path="data.activities.weekly.'+idx+'.week" value="'+escAttr(w.week||'')+'" placeholder="Week label (e.g., Week 1)" oninput="onFieldInput(this)" class="field-input flex-1"/><input data-path="data.activities.weekly.'+idx+'.dates" value="'+escAttr(w.dates||'')+'" placeholder="Dates" oninput="onFieldInput(this)" class="field-input flex-1"/><button onclick="removeListItem(\'data.activities.weekly\','+idx+')" class="icon-btn-danger !h-[42px]">×</button></div><textarea data-path="data.activities.weekly.'+idx+'.tasks" rows="3" placeholder="Tasks performed that week — be specific: what you did, tools used, who supervised, outcome." oninput="onFieldInput(this)" class="field-textarea !min-h-[90px]">'+esc(w.tasks||'')+'</textarea></div>').join('');
+return head(5,'Activities & Duties','Chapter Three — the core evidence of your work. Be specific.')+grid(
+li('3.1 Summary of duties','data.activities.summary',d.activities.summary,'Overall summary of your routine and assigned duties across the whole period. (Aim 80+ words)',false,'Avoid vague phrases like "various tasks" — name real tasks.')+
+'<div class="field-group md:col-span-2"><div class="flex items-center justify-between mb-2"><label class="field-label !mb-0">3.2 Weekly activity log</label><button onclick="openAiModal(\'data.activities.summary\')" class="ai-inline-btn">✦ Enhance summary</button></div><div class="space-y-3">'+(wk||'<p class="empty-list-note">No weekly entries yet — add one per week of attachment.</p>')+'</div><button onclick="addListItem(\'data.activities.weekly\',\'weekly\')" class="add-btn">+ Add week</button><p class="field-hint">Record only weeks you actually attended. Specificity is what examiners reward.</p></div>')}
+if(i===5){const pj=(d.projects.items||[]).map((p,idx)=>'<div class="bg-paper border border-[#e3dcc8] rounded-xl p-4 space-y-2"><div class="flex items-center gap-2"><span class="row-num !mt-0">'+(idx+1)+'</span><input data-path="data.projects.items.'+idx+'.title" value="'+escAttr(p.title||'')+'" placeholder="Project / assignment title" oninput="onFieldInput(this)" class="field-input flex-1 font-bold"/><button onclick="removeListItem(\'data.projects.items\','+idx+')" class="icon-btn-danger !h-[42px]">×</button></div><div class="grid sm:grid-cols-2 gap-2"><input data-path="data.projects.items.'+idx+'.duration" value="'+escAttr(p.duration||'')+'" placeholder="Duration / dates" oninput="onFieldInput(this)" class="field-input"/><input data-path="data.projects.items.'+idx+'.role" value="'+escAttr(p.role||'')+'" placeholder="Your role" oninput="onFieldInput(this)" class="field-input"/></div><textarea data-path="data.projects.items.'+idx+'.description" rows="3" placeholder="What was the task? What did you personally do?" oninput="onFieldInput(this)" class="field-textarea !min-h-[84px]">'+esc(p.description||'')+'</textarea><textarea data-path="data.projects.items.'+idx+'.outcome" rows="2" placeholder="Outcome / result — what was achieved or delivered?" oninput="onFieldInput(this)" class="field-textarea !min-h-[64px]">'+esc(p.outcome||'')+'</textarea></div>').join('');
+return head(6,'Projects & Assignments','Chapter Four — distinct pieces of work you contributed to.')+'<div class="grid gap-4"><div class="field-group"><label class="field-label">Your projects</label><div class="space-y-3">'+(pj||'<p class="empty-list-note">No projects yet — add each significant assignment as its own entry.</p>')+'</div><button onclick="addListItem(\'data.projects.items\',\'project\')" class="add-btn">+ Add project / assignment</button><p class="field-hint">Distinguish your personal contribution from team work. Never claim work you did not do.</p></div></div>'}
+if(i===6)return head(7,'Skills & Learning','Chapter Five — what you can now do that you could not before.')+grid(
+strList('5.1 Technical / professional skills','data.skills.technical',d.skills.technical,'A concrete skill with tool/method, e.g., area + what you can now do','Add technical skill','Name tools, procedures or methods you practiced.')+
+strList('5.2 Soft / workplace skills','data.skills.soft',d.skills.soft,'e.g., teamwork, communication, time management','Add soft skill','Link each to a real situation from your attachment.')+
+li('5.3 Reflection on learning','data.skills.reflection',d.skills.reflection,'How did the attachment change your understanding of your field? Link classroom theory to what you practiced. (Aim 60+ words)',false,'Genuine reflection scores highly — compare before vs after.'));
+if(i===7){const ch=(d.challenges.items||[]).map((c,idx)=>'<div class="bg-paper border border-[#e3dcc8] rounded-xl p-4 space-y-2"><div class="flex items-center gap-2"><span class="row-num !mt-0">'+(idx+1)+'</span><p class="font-bold text-navy-800 text-sm flex-1">Challenge '+(idx+1)+'</p><button onclick="removeListItem(\'data.challenges.items\','+idx+')" class="icon-btn-danger !h-[38px] !w-[38px]">×</button></div><textarea data-path="data.challenges.items.'+idx+'.challenge" rows="2" placeholder="Challenge faced — describe the real problem." oninput="onFieldInput(this)" class="field-textarea !min-h-[64px]">'+esc(c.challenge||'')+'</textarea><textarea data-path="data.challenges.items.'+idx+'.solution" rows="2" placeholder="Solution / action you took (or proposed)." oninput="onFieldInput(this)" class="field-textarea !min-h-[64px]">'+esc(c.solution||'')+'</textarea><input data-path="data.challenges.items.'+idx+'.lesson" value="'+escAttr(c.lesson||'')+'" placeholder="Lesson learned" oninput="onFieldInput(this)" class="field-input"/></div>').join('');
+return head(8,'Challenges & Solutions','Chapter Six — honest problems and how they were handled.')+'<div class="grid gap-4"><div class="field-group"><label class="field-label">Challenges log</label><div class="space-y-3">'+(ch||'<p class="empty-list-note">No challenges recorded yet — every real attachment has some.</p>')+'</div><button onclick="addListItem(\'data.challenges.items\',\'challenge\')" class="add-btn">+ Add challenge</button><p class="field-hint">Examiners distrust reports with zero challenges. Be honest but professional.</p></div></div>'}
+if(i===8)return head(9,'Conclusion & Recommendations','Chapter Seven — your verdict and advice.')+grid(
+li('7.1 Conclusion / summary','data.conclusion.summary',d.conclusion.summary,'Summarize the attachment: whether objectives were met, key achievements and overall value. (Aim 80+ words)',false,'No new facts here — only synthesis of earlier chapters.')+
+strList('7.2 Recommendations','data.conclusion.recommendations',d.conclusion.recommendations,'One actionable recommendation (to organization, university or future attachés)','Add recommendation','At least 3 specific, actionable recommendations.')+
+li('7.3 Suggestions for future improvement','data.conclusion.future',d.conclusion.future,'How could the attachment programme or host processes be improved next time?'));
+const refs=strList('References / bibliography','data.references.refs',d.references.refs,'One source per line (author, title, year / URL + access date)','Add reference','Include only sources you actually consulted. Number them consistently.');
+const acr=(d.references.acronyms||[]).map((a,idx)=>'<div class="dynamic-row"><input data-path="data.references.acronyms.'+idx+'.abbr" value="'+escAttr(a.abbr||'')+'" placeholder="ABBR" oninput="onFieldInput(this)" class="field-input !w-28 font-mono font-bold uppercase"/><input data-path="data.references.acronyms.'+idx+'.full" value="'+escAttr(a.full||'')+'" placeholder="Full meaning" oninput="onFieldInput(this)" class="field-input flex-1"/><button onclick="removeListItem(\'data.references.acronyms\','+idx+')" class="icon-btn-danger">×</button></div>').join('');
+return head(10,'References & Acronyms','Finish with academic integrity — cite and define.')+grid(refs+'<div class="field-group md:col-span-2"><label class="field-label">List of acronyms & abbreviations</label><div class="space-y-2">'+(acr||'<p class="empty-list-note">No acronyms yet — define every abbreviation used in the report.</p>')+'</div><button onclick="addListItem(\'data.references.acronyms\',\'acronym\')" class="add-btn">+ Add acronym</button></div>')}
+
+/* ============ FIELD EVENTS ============ */
+function onFieldInput(el){const r=getActive();if(!r)return;setPath(r,el.dataset.path,el.value);r.updatedAt=Date.now();document.querySelectorAll('[data-wc-for="'+el.dataset.path+'"]').forEach(b=>b.textContent=countWords(el.value)+' words');scheduleAutosave()}
+function onWizardTitle(v){const r=getActive();if(!r)return;r.title=v;r.updatedAt=Date.now();const w=$('wizardTitle'),e=$('editorTitle');if(w&&w.value!==v)w.value=v;if(e&&e.value!==v)e.value=v;scheduleAutosave()}
+function onSearch(v){dashQuery=v;renderDashboard()}
+function onSort(v){dashSort=v;renderDashboard()}
+function setFilter(f){dashFilter=f;document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));renderDashboard()}
+function clearSearch(){$('searchInput').value='';dashQuery='';dashFilter='all';document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b.dataset.filter==='all'));renderDashboard()}
+function addListItem(path,tpl){const r=getActive();if(!r)return;const arr=getPath(r,path);if(!Array.isArray(arr))return;const T={string:'',acronym:{abbr:'',full:''},department:{name:'',function:''},weekly:{week:'Week '+(arr.length+1),dates:'',tasks:''},project:{title:'',duration:'',role:'',description:'',outcome:''},challenge:{challenge:'',solution:'',lesson:''}};arr.push(T[tpl]??'');r.updatedAt=Date.now();persist();rerenderActiveForm();toast('Item added.','success',1500)}
+function removeListItem(path,idx){const r=getActive();if(!r)return;const arr=getPath(r,path);if(!Array.isArray(arr))return;arr.splice(idx,1);if((path.endsWith('objectives')||path.endsWith('refs')||path.endsWith('recommendations')||path.endsWith('technical')||path.endsWith('soft'))&&arr.length===0)arr.push('');r.updatedAt=Date.now();persist();rerenderActiveForm()}
+function rerenderActiveForm(){if(!$('view-wizard').classList.contains('hidden'))renderWizardContent();if(!$('view-editor').classList.contains('hidden'))renderEditorContent();updateProgressUI();queueCheckRefresh()}
+function formatText(path,action){const ta=document.querySelector('textarea[data-path="'+path+'"]');if(!ta){toast('Field not visible — open its section first.','warn');return}const s=ta.selectionStart??ta.value.length,e=ta.selectionEnd??ta.value.length,sel=ta.value.slice(s,e)||'text';let out=ta.value;
+if(action==='bold')out=ta.value.slice(0,s)+'**'+sel+'**'+ta.value.slice(e);
+else if(action==='italic')out=ta.value.slice(0,s)+'*'+sel+'*'+ta.value.slice(e);
+else if(action==='h'){const ls=ta.value.lastIndexOf('\n',s-1)+1;out=ta.value.slice(0,ls)+'## '+ta.value.slice(ls)}
+else if(action==='bullet')out=ta.value.split('\n').map(l=>l.trim()?'- '+l.replace(/^[-*•\d.)\s]+/,''):l).join('\n');
+else if(action==='number'){let n=1;out=ta.value.split('\n').map(l=>l.trim()?(n++)+'. '+l.replace(/^[-*•\d.)\s]+/,''):l).join('\n')}
+else if(action==='clear')out=ta.value.replace(/\*\*/g,'').replace(/(^|\n)#{1,3}\s/g,'$1').replace(/(^|\n)[-*•]\s/g,'$1');
+ta.value=out;ta.focus();onFieldInput(ta)}
+
+/* ============ DASHBOARD ============ */
+function renderDashboard(){const h=new Date().getHours();$('greetTitle').textContent=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', Scholar.';$('greetDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+const drafts=reports.filter(r=>r.status==='draft').length,done=reports.filter(r=>r.status==='completed').length,words=reports.reduce((a,r)=>a+totalWords(r),0);
+$('statTotal').textContent=reports.length;$('statDrafts').textContent=drafts;$('statDone').textContent=done;$('statWords').textContent=words>999?(words/1000).toFixed(1)+'k':words;
+$('sideCount').textContent=reports.length;$('emptyHero').classList.toggle('hidden',reports.length>0);
+const recent=[...reports].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,3);
+$('recentWrap').classList.toggle('hidden',recent.length===0);
+$('recentRow').innerHTML=recent.map(r=>{const p=calcProgress(r);return '<div class="bg-white border border-[#e3dcc8] rounded-2xl p-5 shadow-card card-hover"><div class="flex items-start gap-2"><h4 class="font-bold text-navy-800 text-sm flex-1 line-clamp-2">'+esc(r.title)+'</h4>'+(r.status==='completed'?'<span class="badge badge-completed">Done</span>':'<span class="badge badge-draft">Draft</span>')+'</div><p class="text-xs text-slate-500 mt-1">'+esc(r.data.student.university||'No university set')+' · '+esc(r.data.organization.name||'No organization yet')+'</p><div class="progress-track mt-3"><div class="progress-fill" style="width:'+p.pct+'%"></div></div><div class="flex items-center justify-between mt-2"><span class="text-[.72rem] font-bold text-slate-500">'+p.pct+'% · Edited '+timeAgo(r.updatedAt)+'</span></div><div class="flex gap-2 mt-3"><button onclick="openEditor(\''+r.id+'\')" class="btn-primary !py-2 !px-3 text-xs flex-1 justify-center">Continue Editing</button><button onclick="openPreview(\''+r.id+'\')" class="btn-secondary !py-2 !px-3 text-xs">Preview</button></div></div>'}).join('');
+let list=[...reports];
+if(dashFilter!=='all')list=list.filter(r=>r.status===dashFilter);
+if(dashQuery){const q=dashQuery.toLowerCase();list=list.filter(r=>(r.title+' '+(r.data.student.university||'')+' '+(r.data.organization.name||'')+' '+(r.data.student.regNumber||'')).toLowerCase().includes(q))}
+list.sort((a,b)=>{if(dashSort==='title')return a.title.localeCompare(b.title);if(dashSort==='created')return b.createdAt-a.createdAt;if(dashSort==='progress')return calcProgress(b).pct-calcProgress(a).pct;if(dashSort==='status')return a.status.localeCompare(b.status);return b.updatedAt-a.updatedAt});
+$('reportCountBadge').textContent=list.length+' shown';
+$('noResults').classList.toggle('hidden',list.length>0||reports.length===0);
+$('reportsGrid').innerHTML=list.map(r=>{const p=calcProgress(r),w=totalWords(r);return '<div class="bg-white border border-[#e3dcc8] rounded-2xl p-5 shadow-card card-hover flex flex-col"><div class="flex items-start gap-2"><h4 class="font-bold text-navy-800 text-[.95rem] flex-1 line-clamp-2 leading-snug">'+esc(r.title)+'</h4>'+(r.status==='completed'?'<span class="badge badge-completed shrink-0">Completed</span>':'<span class="badge badge-draft shrink-0">Draft</span>')+'</div><div class="text-xs text-slate-500 mt-2 space-y-1"><p class="truncate">🎓 '+esc(r.data.student.university||'University not set')+'</p><p class="truncate">🏢 '+esc(r.data.organization.name||'Organization not set')+'</p><p title="'+fmtDate(r.updatedAt)+' '+fmtTime(r.updatedAt)+'">🕒 Last edited '+timeAgo(r.updatedAt)+' · '+w+' words</p></div><div class="progress-track mt-3"><div class="progress-fill '+(r.status==='completed'?'gold':'')+'" style="width:'+p.pct+'%"></div></div><p class="text-[.72rem] font-bold text-slate-500 mt-1.5">'+p.pct+'% complete</p><div class="grid grid-cols-2 gap-2 mt-3"><button onclick="openEditor(\''+r.id+'\')" class="btn-primary !py-2 !px-2 text-xs justify-center col-span-2">Continue Editing →</button><button onclick="openPreview(\''+r.id+'\')" class="btn-secondary !py-2 !px-2 text-xs justify-center">Preview</button><button onclick="reportMenu(\''+r.id+'\')" class="btn-secondary !py-2 !px-2 text-xs justify-center">⋯ More</button></div></div>'}).join('');
+if(reports.length===0)$('reportsGrid').innerHTML=''}
+function reportMenu(id){const r=getById(id);if(!r)return;openModal('<h3 class="font-serif font-bold text-lg text-navy-800 pr-8">'+esc(r.title)+'</h3><p class="text-xs text-slate-500 mt-1">Created '+fmtDate(r.createdAt)+' · Updated '+timeAgo(r.updatedAt)+'</p><div class="grid gap-2 mt-5"><button onclick="openEditor(\''+id+'\')" class="btn-primary justify-center">Continue Editing</button><button onclick="openPreview(\''+id+'\')" class="btn-secondary justify-center">Preview Report</button><div class="grid grid-cols-2 gap-2"><button onclick="duplicateReport(\''+id+'\')" class="btn-secondary justify-center text-sm">Duplicate</button><button onclick="renameReport(\''+id+'\')" class="btn-secondary justify-center text-sm">Rename</button></div><button onclick="toggleComplete(\''+id+'\')" class="btn-gold justify-center text-sm">'+(r.status==='completed'?'Reopen as Draft':'Mark as Completed')+'</button><button onclick="askDelete(\''+id+'\')" class="btn-danger text-center">Delete Report</button><button onclick="closeModal()" class="btn-ghost justify-center">Cancel</button></div>')}
+function openCreateModal(){openModal('<div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#c9a94f,#9a7a32)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f2a44" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></div><div><h3 class="font-serif font-bold text-xl text-navy-800">Create New Report</h3><p class="text-xs text-slate-500">Starts as a private draft · autosaved instantly</p></div></div><div class="space-y-3 mt-5"><div><label class="field-label">Working title <span class="req">*</span></label><input id="newTitle" class="field-input" placeholder="e.g., Industrial Attachment Report — descriptive title of your choice" onkeydown="if(event.key===\'Enter\')doCreate()"/></div><div class="grid sm:grid-cols-2 gap-3"><div><label class="field-label">University (optional)</label><input id="newUni" class="field-input" placeholder="Your university"/></div><div><label class="field-label">Programme (optional)</label><input id="newProg" class="field-input" placeholder="Your programme"/></div></div><div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 leading-relaxed">🔒 <strong>Private:</strong> this report is stored only in this browser. You can export or delete it anytime.</div></div><div class="flex gap-2 mt-5"><button onclick="closeModal()" class="btn-ghost flex-1 justify-center">Cancel</button><button onclick="doCreate()" class="btn-primary flex-1 justify-center">Start Guided Wizard →</button></div>');setTimeout(()=>$('newTitle')?.focus(),100)}
+function doCreate(){const t=($('newTitle').value||'').trim();if(!t){toast('Please give your report a working title.','warn');$('newTitle').focus();return}const r=createReport(t,($('newUni').value||'').trim(),($('newProg').value||'').trim());reports.unshift(r);activeReportId=r.id;persist();closeModal();toast('Report created — Step 1 of 10. Everything autosaves.','success');openWizard(r.id,0)}
+function duplicateReport(id){const r=getById(id);if(!r)return;const c=JSON.parse(JSON.stringify(r));c.id=uid();c.title=r.title+' (Copy)';c.status='draft';c.createdAt=Date.now();c.updatedAt=Date.now();reports.unshift(c);persist();closeModal();renderDashboard();toast('Report duplicated as draft.','success')}
+function renameReport(id){const r=getById(id);if(!r)return;openModal('<h3 class="font-serif font-bold text-lg text-navy-800">Rename report</h3><input id="rnTitle" class="field-input mt-3" value="'+escAttr(r.title)+'"/><div class="flex gap-2 mt-4"><button onclick="closeModal()" class="btn-ghost flex-1 justify-center">Cancel</button><button onclick="doRename(\''+id+'\')" class="btn-primary flex-1 justify-center">Save</button></div>')}
+function doRename(id){const r=getById(id);const v=($('rnTitle').value||'').trim();if(!v){toast('Title cannot be empty.','warn');return}r.title=v;r.updatedAt=Date.now();persist();closeModal();renderDashboard();if(activeReportId===id){updateProgressUI()}toast('Renamed.','success')}
+function askDelete(id){const r=getById(id);openModal('<h3 class="font-serif font-bold text-lg text-red-800">Delete this report?</h3><p class="text-sm text-slate-600 mt-2">“'+esc(r.title)+'” will be permanently removed from this device. This cannot be undone. Consider downloading a backup first.</p><div class="flex gap-2 mt-5"><button onclick="closeModal()" class="btn-secondary flex-1 justify-center">Keep</button><button onclick="exportBackupOne(\''+id+'\')" class="btn-secondary flex-1 justify-center">Backup first</button><button onclick="doDelete(\''+id+'\')" class="btn-danger flex-1">Delete</button></div>')}
+function doDelete(id){reports=reports.filter(r=>r.id!==id);if(activeReportId===id)activeReportId=null;persist();closeModal();if(!$('view-dashboard').classList.contains('hidden'))renderDashboard();else showView('dashboard');toast('Report deleted.','success')}
+function toggleComplete(id){id=id||activeReportId;const r=getById(id);if(!r)return;closeModal();if(r.status==='completed'){r.status='draft';r.updatedAt=Date.now();persist();toast('Reopened as draft.','success')}else{const c=runChecks(r);if(c.score<55){openModal('<h3 class="font-serif font-bold text-lg text-navy-800">Report is '+c.score+'% ready</h3><p class="text-sm text-slate-600 mt-2">Your validation score is below 55%. You can still mark it complete, but consider addressing these first:</p><ul class="mt-3 space-y-1.5 max-h-48 overflow-y-auto">'+c.checks.filter(x=>x.status!=='pass').slice(0,6).map(x=>'<li class="text-xs bg-paper border border-[#e3dcc8] rounded-lg px-3 py-2">⚠ '+esc(x.label)+' — '+esc(x.detail)+'</li>').join('')+'</ul><div class="flex gap-2 mt-4"><button onclick="closeModal();openEditor(\''+r.id+'\')" class="btn-secondary flex-1 justify-center">Keep editing</button><button onclick="forceComplete(\''+r.id+'\')" class="btn-gold flex-1 justify-center">Mark complete anyway</button></div>');return}r.status='completed';r.updatedAt=Date.now();persist();toast('Marked as completed. Well done!','success')}
+if(!$('view-editor').classList.contains('hidden'))renderEditor();if(!$('view-dashboard').classList.contains('hidden'))renderDashboard()}
+function forceComplete(id){const r=getById(id);r.status='completed';r.updatedAt=Date.now();persist();closeModal();renderEditor();toast('Marked as completed.','success')}
+
+/* ============ WIZARD ============ */
+function openWizard(id,step=0){activeReportId=id;wizardStep=step;showView('wizard');renderWizard()}
+function renderWizard(){const r=getActive();if(!r){showView('dashboard');return}$('wizardTitle').value=r.title||'';renderWizardSteps();renderWizardContent();showSavedNow()}
+function renderWizardSteps(){const r=getActive();const p=calcProgress(r);$('wizardSteps').innerHTML=STEPS.map((s,i)=>{const sc=p.per[i];const cls=i===wizardStep?'current':sc>=.8?'done':'';return '<button onclick="goStep('+i+')" class="step-item '+cls+' w-full flex items-center gap-3 p-2.5 rounded-xl border border-transparent text-left transition"><span class="step-dot">'+(sc>=.8&&i!==wizardStep?'✓':(i+1))+'</span><span class="flex-1 min-w-0"><span class="block text-[.83rem] font-bold text-navy-800 truncate">'+s.t+'</span><span class="block h-1 bg-[#ece6d5] rounded-full mt-1.5 overflow-hidden"><span class="block h-full bg-navy-800 rounded-full" style="width:'+Math.round(sc*100)+'%"></span></span></span></button>'}).join('');
+$('wizardMobileStepper').innerHTML=STEPS.map((s,i)=>'<button onclick="goStep('+i+')" class="shrink-0 flex items-center gap-1.5 text-[.72rem] font-bold px-3 py-1.5 rounded-full border '+(i===wizardStep?'bg-navy-800 text-white border-navy-800':p.per[i]>=.8?'bg-emerald-50 text-emerald-800 border-emerald-300':'bg-white text-slate-500 border-[#e3dcc8]')+'">'+(i+1)+'. '+s.t.split(' ')[0]+'</button>').join('')}
+function renderWizardContent(){const r=getActive();$('wizardContent').innerHTML='<div class="space-y-4">'+getStepHTML(wizardStep,r)+'</div>';$('wizStepLabel').textContent='Step '+(wizardStep+1)+' of 10 · '+STEPS[wizardStep].t;$('wizBack').disabled=wizardStep===0;$('wizBack').style.opacity=wizardStep===0?'.4':'1';$('wizNext').innerHTML=wizardStep===9?'Review in Editor →':'Next →';window.scrollTo({top:0,behavior:'smooth'})}
+function goStep(n){if(n<0||n>9)return;persist();wizardStep=n;renderWizardSteps();renderWizardContent();updateProgressUI()}
+function nextStep(){if(wizardStep<9)goStep(wizardStep+1);else{persist();toast('Wizard complete — refine and export in the editor.','success');openEditor(activeReportId,0)}}
+function prevStep(){if(wizardStep>0)goStep(wizardStep-1)}
+function updateProgressUI(){const r=getActive();if(!r)return;const p=calcProgress(r);
+if(!$('view-wizard').classList.contains('hidden')){$('wizardBar').style.width=p.pct+'%';$('wizardPct').textContent=p.pct;renderWizardSteps()}
+if(!$('view-editor').classList.contains('hidden')){$('editorBar').style.width=p.pct+'%';$('editorPct').textContent=p.pct+'%';$('editorTitle').value=r.title||'';$('editorStatus').innerHTML=r.status==='completed'?'<span class="badge badge-completed">● Completed</span>':'<span class="badge badge-draft">● Draft</span>';$('completeBtn').textContent=r.status==='completed'?'Reopen as Draft':'Mark Complete';renderEditorOutline()}}
+
+/* ============ EDITOR ============ */
+function openEditor(id,sec=0){activeReportId=id;editorSection=sec;showView('editor');renderEditor();setEditorTab('edit')}
+function renderEditor(){const r=getActive();if(!r){showView('dashboard');return}updateProgressUI();renderEditorContent();renderCheckPanel();buildAiTargets();applyEditorTab()}
+function renderEditorOutline(){const r=getActive();const p=calcProgress(r);$('editorOutline').innerHTML=STEPS.map((s,i)=>{const sc=Math.round(p.per[i]*100);return '<button onclick="setSection('+i+')" class="shrink-0 lg:shrink lg:w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition '+(i===editorSection?'bg-navy-800 text-white border-navy-800 shadow':'bg-paper text-navy-800 border-[#e3dcc8] hover:border-navy-800')+'"><span class="text-[.7rem] font-extrabold w-6 h-6 rounded-full flex items-center justify-center shrink-0 '+(i===editorSection?'bg-gold-500 text-navy-800':'bg-white border border-[#ddd5c2]')+'">'+(i+1)+'</span><span class="flex-1 min-w-0"><span class="block text-xs font-bold truncate">'+s.t+'</span><span class="hidden lg:block h-1 rounded-full mt-1 overflow-hidden '+(i===editorSection?'bg-white/20':'bg-[#e3dcc8]')+'"><span class="block h-full rounded-full '+(i===editorSection?'bg-gold-400':'bg-navy-800')+'" style="width:'+sc+'%"></span></span></span><span class="text-[.68rem] font-mono font-bold '+(i===editorSection?'text-gold-300':'text-slate-400')+'">'+sc+'%</span></button>'}).join('')}
+function setSection(i){editorSection=i;persist();renderEditorContent();renderEditorOutline();setEditorTab('edit')}
+function renderEditorContent(){const r=getActive();$('editorContent').innerHTML='<div class="space-y-4">'+getStepHTML(editorSection,r)+'</div><div class="flex gap-2"><button onclick="setSection(Math.max(0,editorSection-1))" class="btn-secondary flex-1 justify-center text-sm">← Previous section</button><button onclick="setSection(Math.min(9,editorSection+1))" class="btn-secondary flex-1 justify-center text-sm">Next section →</button></div>'}
+function setSideTab(t){sideTab=t;document.querySelectorAll('[data-stab]').forEach(b=>{const on=b.dataset.stab===t;b.classList.toggle('text-navy-800',on);b.classList.toggle('text-slate-400',!on);b.style.borderColor=on?'#0f2a44':'transparent'});$('sideCheck').classList.toggle('hidden',t!=='check');$('sideAi').classList.toggle('hidden',t!=='ai')}
+function setEditorTab(t){editorTab=t;document.querySelectorAll('[data-etab]').forEach(b=>{const on=b.dataset.etab===t;b.className='flex-1 text-sm font-bold py-2 rounded-lg '+(on?'bg-navy-800 text-white':'text-slate-500')});applyEditorTab()}
+function applyEditorTab(){const mob=window.innerWidth<1024;const ow=$('editorOutlineWrap'),ec=$('editorContent'),sd=$('editorSide');[ow,ec,sd].forEach(e=>e.classList.remove('hidden'));if(!mob)return;ow.classList.toggle('hidden',editorTab!=='edit');ec.classList.toggle('hidden',editorTab!=='edit');sd.classList.toggle('hidden',editorTab==='edit');if(editorTab==='check')setSideTab('check');if(editorTab==='ai')setSideTab('ai')}
+window.addEventListener('resize',()=>{if(!$('view-editor').classList.contains('hidden'))applyEditorTab()});
+function renderCheckPanel(){const r=getActive();if(!r)return;const c=runChecks(r);const circ=2*Math.PI*34;const off=circ-(c.score/100)*circ;const col=c.score>=75?'#059669':c.score>=50?'#b8933f':'#dc2626';
+$('sideCheck').innerHTML='<div class="flex items-center gap-4"><div class="relative shrink-0"><svg width="86" height="86" class="score-ring"><circle cx="43" cy="43" r="34" fill="none" stroke="#ece6d5" stroke-width="9"/><circle cx="43" cy="43" r="34" fill="none" stroke="'+col+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+circ+'" stroke-dashoffset="'+off+'"/></svg><div class="absolute inset-0 flex flex-col items-center justify-center"><span class="font-extrabold text-xl text-navy-800">'+c.score+'</span><span class="text-[.6rem] font-bold text-slate-400 uppercase">Ready %</span></div></div><div><p class="font-extrabold text-navy-800 text-sm">'+(c.score>=75?'Strong — near submission':c.score>=50?'Progressing — keep going':'Early draft — build chapters')+'</p><p class="text-xs text-slate-500 mt-1">'+c.words+' words · '+c.checks.filter(x=>x.status==='pass').length+'/'+c.checks.length+' checks passed</p><button onclick="openPreview()" class="ai-inline-btn mt-2">Preview full report</button></div></div><div class="space-y-2 mt-4 max-h-[420px] overflow-y-auto pr-1">'+c.checks.map(x=>'<div class="check-row"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold shrink-0 '+(x.status==='pass'?'bg-emerald-100 text-emerald-700':x.status==='warn'?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700')+'">'+(x.status==='pass'?'✓':x.status==='warn'?'!':'×')+'</span><div class="flex-1 min-w-0"><p class="font-bold text-navy-800 text-[.8rem]">'+esc(x.label)+'</p><p class="text-[.72rem] text-slate-500">'+esc(x.detail)+'</p></div><button onclick="setSection('+x.sec+')" class="text-[.7rem] font-bold text-navy-800 underline shrink-0">Fix</button></div>').join('')+'</div>'}
+function toggleExportMenu(e){e.stopPropagation();$('exportMenu').classList.toggle('hidden')}
+
+/* ============ AI ASSIST (honest, local) ============ */
+function allTargets(r){const d=r.data;const T=[];const push=(path,label)=>{const v=getPath(r,path);T.push({path,label,val:String(v||'')})};
+push('data.organization.about','Org — About');push('data.introduction.background','Intro — Background');push('data.introduction.scope','Intro — Scope');push('data.structure.overview','Structure — Overview');push('data.structure.leadership','Structure — Leadership');push('data.structure.organogram','Structure — Organogram');push('data.activities.summary','Activities — Summary');
+(d.activities.weekly||[]).forEach((w,i)=>push('data.activities.weekly.'+i+'.tasks','Week '+(w.week||(i+1))+' — Tasks'));
+(d.projects.items||[]).forEach((p,i)=>{push('data.projects.items.'+i+'.description','Project '+(i+1)+' — Description');push('data.projects.items.'+i+'.outcome','Project '+(i+1)+' — Outcome')});
+push('data.skills.reflection','Skills — Reflection');
+(d.challenges.items||[]).forEach((c,i)=>{push('data.challenges.items.'+i+'.challenge','Challenge '+(i+1));push('data.challenges.items.'+i+'.solution','Challenge '+(i+1)+' — Solution')});
+push('data.conclusion.summary','Conclusion — Summary');push('data.conclusion.future','Conclusion — Future');return T}
+function aiGrammar(t){let x=' '+t.trim().replace(/[ \t]{2,}/g,' ').replace(/\s+\n/g,'\n').replace(/\n{3,}/g,'\n\n');const fix={'teh':'the','recieve':'receive','seperate':'separate','occured':'occurred',' untill ':' until ',' alot ':' a lot of ','dept.':'department'};Object.keys(fix).forEach(k=>{x=x.replace(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),fix[k])});x=x.replace(/\bi\b/g,'I').replace(/\bdont\b/gi,"don't").replace(/\bcant\b/gi,"can't").replace(/\bwont\b/gi,"won't");x=x.replace(/(^\s*\w|[.!?]\s+\w)/g,m=>m.toUpperCase());x=x.trim();if(x&&/[a-zA-Z0-9"')\]]$/.test(x)&&!/[.!?]$/.test(x))x+='.';return{text:x.trim(),note:'Applied spacing, capitalization and end-punctuation corrections to your own sentences.'}}
+function aiAcademic(t){let x=' '+t+' ';const map=[['a lot of','a considerable number of'],['a lot','considerably'],['big','significant'],['small','limited'],['good','effective'],['bad','challenging'],['things','aspects'],['stuff','materials'],['very good','highly effective'],['really','notably'],["don't",'do not'],["can't",'cannot'],["won't",'will not'],["didn't",'did not'],["couldn't",'could not'],['got','obtained'],['get ','obtain '],['made','developed'],['showed','demonstrated'],['helped','assisted'],['started','commenced'],['ended','concluded'],['also','Additionally,'],['so ','therefore ']];map.forEach(([a,b])=>{x=x.replace(new RegExp('\\b'+a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','gi'),m=>/^[A-Z]/.test(m)?b.charAt(0).toUpperCase()+b.slice(1):b)});x=x.replace(/\s{2,}/g,' ').trim();x=x.replace(/(^\w|[.!?]\s+\w)/g,m=>m.toUpperCase());return{text:x,note:'Replaced informal wording with formal academic equivalents. No new facts added.'}}
+function aiExpand(t){const w=countWords(t);const core=t.trim().replace(/\s+/g,' ');const framed='During the attachment period, '+core.charAt(0).toLowerCase()+core.slice(1)+' This experience provided practical insight into the work described above and strengthened my professional understanding through direct participation and observation.';return{text:framed+'\n\nTo strengthen further (add only what is true for you): specify the tools or methods used, the guidance received, and the outcome achieved.',note:'Added academic framing around your '+w+' words plus prompts for true details. Nothing invented.'}}
+function aiCondense(t){const ss=t.match(/[^.!?\n]+[.!?]+/g)||[t];if(ss.length<=2)return{text:t.trim(),note:'Already concise — no change needed.'};const scored=ss.map(s=>({s:s.trim(),l:s.trim().split(/\s+/).length}));const keep=Math.max(2,Math.ceil(ss.length/2));const idx=scored.map((o,i)=>({...o,i})).sort((a,b)=>b.l-a.l).slice(0,keep).map(o=>o.i).sort((a,b)=>a-b);return{text:idx.map(i=>scored[i].s).join(' '),note:'Kept the '+keep+' most substantial of your '+ss.length+' sentences.'}}
+function aiB2P(t){const lines=t.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>l.replace(/^[-*•\d.)\s]+/,'').replace(/\.?$/,'.'));if(!lines.length)return{text:t,note:'No bullets detected.'};const conn=['Additionally, ','Furthermore, ','Moreover, '];let out=lines[0].charAt(0).toUpperCase()+lines[0].slice(1);for(let i=1;i<lines.length;i++)out+=' '+conn[(i-1)%conn.length]+lines[i].charAt(0).toLowerCase()+lines[i].slice(1);return{text:out,note:'Joined your '+lines.length+' bullets into flowing academic prose.'}}
+function aiP2B(t){const ss=t.match(/[^.!?\n]+[.!?]+/g)||t.split('\n').filter(Boolean);return{text:ss.map(s=>'- '+s.trim()).join('\n'),note:'Split your paragraph into '+ss.length+' clear bullets.'}}
+const AI_FN={grammar:aiGrammar,academic:aiAcademic,expand:aiExpand,condense:aiCondense,b2p:aiB2P,p2b:aiP2B};
+const AI_NAMES={grammar:'Fix Grammar',academic:'Academic Tone',expand:'Expand Ideas',condense:'Condense',b2p:'Bullets → Paragraph',p2b:'Paragraph → Bullets'};
+function runAi(path,action){const r=getActive();const cur=String(getPath(r,path)||'');if(!cur.trim())return{empty:true};return AI_FN[action](cur)}
+function buildAiTargets(pre){const r=getActive();if(!r)return;const T=allTargets(r);const sel=$('aiTargetSide');const cur=pre||sel.value||T[0]?.path;sel.innerHTML=T.map(t=>'<option value="'+t.path+'"'+(t.path===cur?' selected':'')+'>'+esc(t.label)+' ('+countWords(t.val)+'w)</option>').join('');sideAiTargetChange()}
+function sideAiTargetChange(){const r=getActive();const p=$('aiTargetSide').value;const v=String(getPath(r,p)||'');$('aiOriginalSide').textContent=v.trim()?v.slice(0,260)+(v.length>260?'…':''):'This field is empty — write something first. AI will not invent content.';$('aiResultSide').classList.add('hidden');aiSideResult=null}
+function sideAiAction(a){const r=getActive();const p=$('aiTargetSide').value;const res=runAi(p,a);if(res.empty){toast('Write in that field first — AI only enhances your own words and never invents facts.','warn');return}aiSideResult={path:p,text:res.text,action:a};$('aiResultSide').classList.remove('hidden');$('aiResultSide').innerHTML='<p class="text-[.7rem] font-extrabold uppercase tracking-wider text-emerald-700">✦ '+AI_NAMES[a]+' — review before accepting</p><p class="text-xs text-slate-700 mt-1.5 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">'+esc(res.text.slice(0,600))+(res.text.length>600?'…':'')+'</p><p class="text-[.7rem] text-emerald-700 mt-2 italic">'+esc(res.note)+'</p><div class="flex gap-2 mt-2.5"><button onclick="acceptSideAi()" class="btn-primary !py-1.5 !px-3 text-xs flex-1 justify-center">Accept</button><button onclick="discardSideAi()" class="btn-secondary !py-1.5 !px-3 text-xs">Discard</button></div>'}
+function acceptSideAi(){if(!aiSideResult)return;const r=getActive();setPath(r,aiSideResult.path,aiSideResult.text);r.updatedAt=Date.now();persist();$('aiResultSide').classList.add('hidden');rerenderActiveForm();buildAiTargets(aiSideResult.path);toast('Enhancement applied to your text.','success');aiSideResult=null}
+function discardSideAi(){$('aiResultSide').classList.add('hidden');aiSideResult=null}
+function openAiModal(prePath){const r=getActive();if(!r)return;const T=allTargets(r);const selOpts=T.map(t=>'<option value="'+t.path+'"'+(t.path===prePath?' selected':'')+'>'+esc(t.label)+' ('+countWords(t.val)+'w)</option>').join('');
+openModal('<h3 class="font-serif font-bold text-xl text-navy-800">✦ AI Writing Assistant</h3><p class="text-xs text-slate-500 mt-1">Enhances <strong>only</strong> what you wrote. Empty fields are never filled with invented facts.</p><div class="bg-gold-50 border border-gold-300 rounded-xl p-3 mt-3 text-xs text-[#6b5a26] leading-relaxed">Your text never leaves this browser — all assistance runs locally on your device.</div><label class="field-label mt-4">Target field</label><select id="aiTargetModal" onchange="modalAiTargetChange()" class="field-input text-sm">'+selOpts+'</select><div class="bg-white border border-[#e3dcc8] rounded-xl p-3 mt-3"><p class="text-[.7rem] font-bold uppercase tracking-wider text-slate-500">Your current text</p><p id="aiOriginalModal" class="text-xs text-slate-600 mt-1 leading-relaxed max-h-28 overflow-y-auto whitespace-pre-wrap"></p></div><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3"><button onclick="modalAiAction(\'grammar\')" class="btn-secondary !py-2 text-xs justify-center">Fix Grammar</button><button onclick="modalAiAction(\'academic\')" class="btn-secondary !py-2 text-xs justify-center">Academic Tone</button><button onclick="modalAiAction(\'expand\')" class="btn-secondary !py-2 text-xs justify-center">Expand</button><button onclick="modalAiAction(\'condense\')" class="btn-secondary !py-2 text-xs justify-center">Condense</button><button onclick="modalAiAction(\'b2p\')" class="btn-secondary !py-2 text-xs justify-center">Bullets→Para</button><button onclick="modalAiAction(\'p2b\')" class="btn-secondary !py-2 text-xs justify-center">Para→Bullets</button></div><div id="aiResultModal" class="hidden mt-3"></div><button onclick="closeModal()" class="btn-ghost w-full justify-center mt-3">Close</button>');
+modalAiTargetChange()}
+function modalAiTargetChange(){const r=getActive();const p=$('aiTargetModal').value;const v=String(getPath(r,p)||'');$('aiOriginalModal').textContent=v.trim()?v:'(Empty — write something first. AI will not invent content.)';$('aiResultModal').classList.add('hidden');aiModalResult=null}
+function modalAiAction(a){const r=getActive();const p=$('aiTargetModal').value;const res=runAi(p,a);if(res.empty){toast('Write in that field first — AI never invents facts.','warn');return}aiModalResult={path:p,text:res.text};const box=$('aiResultModal');box.classList.remove('hidden');box.innerHTML='<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4"><p class="text-xs font-extrabold uppercase tracking-wider text-emerald-700">✦ '+AI_NAMES[a]+' — review</p><p class="text-sm text-slate-700 mt-2 leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto">'+esc(res.text)+'</p><p class="text-xs text-emerald-700 mt-2 italic">'+esc(res.note)+'</p><div class="flex gap-2 mt-3"><button onclick="acceptModalAi()" class="btn-primary flex-1 justify-center !py-2 text-sm">Accept & Apply</button><button onclick="closeModal()" class="btn-secondary !py-2 text-sm">Discard</button></div></div>'}
+function acceptModalAi(){if(!aiModalResult)return;const r=getActive();setPath(r,aiModalResult.path,aiModalResult.text);r.updatedAt=Date.now();persist();closeModal();rerenderActiveForm();toast('Enhancement applied.','success');aiModalResult=null}
+function openAiFor(p){openAiModal(p)}
+
+/* ============ PREVIEW / EXPORT ============ */
+function longHtml(t,emptyMsg){t=String(t||'').trim();if(!t)return '<p class="empty-note">['+(emptyMsg||'To be completed — add content in the editor.')+']</p>';const lines=t.split('\n');let html='',ul=false,ol=false;const inline=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>');
+lines.forEach(raw=>{const l=raw.trim();if(!l){if(ul){html+='</ul>';ul=false}if(ol){html+='</ol>';ol=false}return}
+if(/^#{1,3}\s/.test(l)){if(ul){html+='</ul>';ul=false}if(ol){html+='</ol>';ol=false}html+='<h3>'+inline(l.replace(/^#{1,3}\s/,''))+'</h3>'}
+else if(/^[-*•]\s/.test(l)){if(ol){html+='</ol>';ol=false}if(!ul){html+='<ul>';ul=true}html+='<li>'+inline(l.replace(/^[-*•]\s/,''))+'</li>'}
+else if(/^\d+[.)]\s/.test(l)){if(ul){html+='</ul>';ul=false}if(!ol){html+='<ol>';ol=false}html+='<li>'+inline(l.replace(/^\d+[.)]\s/,''))+'</li>'}
+else{if(ul){html+='</ul>';ul=false}if(ol){html+='</ol>';ol=false}html+='<p>'+inline(l)+'</p>'}});
+if(ul)html+='</ul>';if(ol)html+='</ol>';return html}
+function buildReportHTML(r){const d=r.data,s=d.student,o=d.organization;const per=s.periodStart||s.periodEnd?((s.periodStart||'?')+' — '+(s.periodEnd||'?')):'';
+const deps=d.structure.departments.filter(x=>x.name.trim());const wk=d.activities.weekly;const pj=d.projects.items.filter(x=>x.title.trim());const ch=d.challenges.items.filter(x=>x.challenge.trim());
+const toc=['Introduction','Organizational Structure','Activities and Duties','Projects and Assignments','Skills and Learning','Challenges and Solutions','Conclusion and Recommendations','References and Acronyms'];
+let h='<div style="text-align:center;padding:2rem 0 1rem"><p style="font-family:Inter;font-size:12px;letter-spacing:.2em;color:#b8933f;font-weight:800">'+esc((s.university||'UNIVERSITY').toUpperCase())+'</p>'+(s.faculty?'<p style="font-family:Inter;font-size:12px;color:#555">'+esc(s.faculty)+'</p>':'')+(s.department?'<p style="font-family:Inter;font-size:12px;color:#555">'+esc(s.department)+'</p>':'')+'<div class="cover-rule"></div><h1 style="border:none;text-align:center;font-size:28px;margin:1.2rem 0 .4rem">FIELD / INDUSTRIAL<br/>ATTACHMENT REPORT</h1><p style="text-align:center;font-family:Inter;font-size:13px;color:#444;font-style:italic">'+esc(r.title)+'</p><div class="cover-rule"></div>';
+h+='<table style="max-width:520px;margin:1.5rem auto"><tbody>'+[['Student',s.fullName||'[To be completed]'],['Registration No.',s.regNumber||'[To be completed]'],['Programme',s.program||'—'],['Level',s.level||'—'],['Academic Year',s.academicYear||'—'],['Host Organization',o.name||'[To be completed]'],['Attachment Period',per||'[To be completed]']].map(row=>'<tr><td style="font-weight:700;width:42%;background:#0f2a44!important;color:#fff;border-color:#0f2a44">'+row[0]+'</td><td>'+esc(row[1])+'</td></tr>').join('')+'</tbody></table>';
+h+='<p style="text-align:center;font-family:Inter;font-size:12px;color:#666">Faculty Supervisor: '+esc(s.facultySupervisor||'—')+' &nbsp;·&nbsp; Onsite Supervisor: '+esc(o.contactPerson||'—')+'</p><p style="text-align:center;font-family:Inter;font-size:12px;color:#999">'+esc(fmtDate(Date.now()))+'</p></div><div class="page-break"></div>';
+if(s.fullName.trim()&&s.regNumber.trim()){h+='<h1>Declaration</h1><p>I, <strong>'+esc(s.fullName)+'</strong> ('+esc(s.regNumber)+'), declare that this attachment report is my own original work prepared from my personal experience during the attachment period'+(o.name?' at '+esc(o.name):'')+'. It has not been submitted for any other award, and all sources consulted are acknowledged.</p><br/><p>Signature: ____________________ &nbsp;&nbsp;&nbsp; Date: ____________________</p><div class="page-break"></div>'}
+h+='<h1>Table of Contents</h1>'+toc.map((t,i)=>'<div class="toc-item"><span><strong>Chapter '+(i+1)+'.</strong> '+t+'</span></div>').join('')+'<div class="page-break"></div>';
+h+='<h1>Chapter One — Introduction</h1><h2>1.1 Background</h2>'+longHtml(d.introduction.background)+'<h2>1.2 Objectives of the Attachment</h2>'+(d.introduction.objectives.filter(x=>x.trim()).length?'<ol>'+d.introduction.objectives.filter(x=>x.trim()).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>':'<p class="empty-note">[No objectives listed yet.]</p>')+'<h2>1.3 Scope of the Report</h2>'+longHtml(d.introduction.scope);
+h+='<h1>Chapter Two — Organizational Structure</h1><h2>2.1 Overview</h2>'+longHtml(d.structure.overview)+'<h2>2.2 Departments / Units</h2>'+(deps.length?'<table><tr><th style="width:35%">Department / Unit</th><th>Role / Function</th></tr>'+deps.map(x=>'<tr><td><strong>'+esc(x.name)+'</strong></td><td>'+esc(x.function||'—')+'</td></tr>').join('')+'</table>':'<p class="empty-note">[No departments described yet.]</p>')+'<h2>2.3 Leadership & Supervision</h2>'+longHtml(d.structure.leadership)+'<h2>2.4 Organogram / Reporting Line</h2>'+longHtml(d.structure.organogram);
+h+='<h1>Chapter Three — Activities and Duties</h1><h2>3.1 Summary of Duties</h2>'+longHtml(d.activities.summary)+'<h2>3.2 Weekly Activity Log</h2>'+(wk.filter(w=>w.tasks.trim()||w.week.trim()).length?'<table><tr><th style="width:18%">Week</th><th style="width:20%">Dates</th><th>Tasks Performed</th></tr>'+wk.map(w=>'<tr><td><strong>'+esc(w.week||'—')+'</strong></td><td>'+esc(w.dates||'—')+'</td><td>'+esc(w.tasks||'—').replace(/\n/g,'<br/>')+'</td></tr>').join('')+'</table>':'<p class="empty-note">[No weekly entries yet.]</p>');
+h+='<h1>Chapter Four — Projects and Assignments</h1>'+(pj.length?pj.map((p,i)=>'<h2>4.'+(i+1)+' '+esc(p.title)+'</h2><p style="font-family:Inter;font-size:12.5px;color:#555"><strong>Duration:</strong> '+esc(p.duration||'—')+' &nbsp;·&nbsp; <strong>Role:</strong> '+esc(p.role||'—')+'</p>'+longHtml(p.description,'No description.')+'<h3>Outcome</h3>'+longHtml(p.outcome,'No outcome recorded.')).join(''):'<p class="empty-note">[No projects recorded yet.]</p>');
+const tech=d.skills.technical.filter(x=>x.trim()),soft=d.skills.soft.filter(x=>x.trim());
+h+='<h1>Chapter Five — Skills and Learning</h1><h2>5.1 Technical / Professional Skills</h2>'+(tech.length?'<ul>'+tech.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="empty-note">[None listed.]</p>')+'<h2>5.2 Soft / Workplace Skills</h2>'+(soft.length?'<ul>'+soft.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="empty-note">[None listed.]</p>')+'<h2>5.3 Reflection on Learning</h2>'+longHtml(d.skills.reflection);
+h+='<h1>Chapter Six — Challenges and Solutions</h1>'+(ch.length?'<table><tr><th style="width:5%">#</th><th style="width:35%">Challenge</th><th style="width:35%">Solution / Action</th><th>Lesson</th></tr>'+ch.map((c,i)=>'<tr><td><strong>'+(i+1)+'</strong></td><td>'+esc(c.challenge)+'</td><td>'+esc(c.solution||'—')+'</td><td>'+esc(c.lesson||'—')+'</td></tr>').join('')+'</table>':'<p class="empty-note">[No challenges recorded yet.]</p>');
+const recs=d.conclusion.recommendations.filter(x=>x.trim());
+h+='<h1>Chapter Seven — Conclusion and Recommendations</h1><h2>7.1 Conclusion</h2>'+longHtml(d.conclusion.summary)+'<h2>7.2 Recommendations</h2>'+(recs.length?'<ol>'+recs.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>':'<p class="empty-note">[No recommendations yet.]</p>')+'<h2>7.3 Suggestions for Future Improvement</h2>'+longHtml(d.conclusion.future);
+const refs=d.references.refs.filter(x=>x.trim()),acr=d.references.acronyms.filter(x=>x.abbr.trim());
+h+='<h1>References</h1>'+(refs.length?'<ol>'+refs.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>':'<p class="empty-note">[No references listed.]</p>')+'<h1>Acronyms & Abbreviations</h1>'+(acr.length?'<table><tr><th style="width:25%">Abbreviation</th><th>Full Meaning</th></tr>'+acr.map(a=>'<tr><td><strong>'+esc(a.abbr.toUpperCase())+'</strong></td><td>'+esc(a.full)+'</td></tr>').join('')+'</table>':'<p class="empty-note">[No acronyms defined.]</p>');
+h+='<div class="page-break"></div><p style="text-align:center;font-family:Inter;font-size:11px;color:#999">— End of report · Prepared with Attachment Report Builder · Content supplied solely by the student —</p>';
+return h}
+function openPreview(id){id=id||activeReportId;const r=getById(id);if(!r){toast('Open a report first.','warn');return}previewId=id;activeReportId=id;persist();$('previewTitle').textContent=r.title;$('previewDoc').innerHTML=buildReportHTML(r);$('previewOverlay').classList.remove('hidden');document.body.style.overflow='hidden'}
+function closePreview(){$('previewOverlay').classList.add('hidden');document.body.style.overflow='';if(!$('view-dashboard').classList.contains('hidden'))renderDashboard()}
+async function exportDocx(id){id=id||previewId||activeReportId;const r=getById(id);if(!r)return;if(typeof docx==='undefined'){toast('DOCX engine still loading — check connection and retry.','error');return}toast('Generating DOCX…','info',2000);try{const D=docx;
+const center=(t,bold=true,size=26)=>new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{after:160},children:[new D.TextRun({text:String(t),bold,size})]});
+const head=(t,l)=>new D.Paragraph({heading:l,spacing:{before:360,after:180},children:[new D.TextRun({text:String(t),bold:true})]});
+const para=t=>new D.Paragraph({alignment:D.AlignmentType.JUSTIFIED,spacing:{after:160},children:[new D.TextRun({text:String(t||'')})]});
+const bullet=t=>new D.Paragraph({bullet:{level:0},spacing:{after:80},children:[new D.TextRun({text:String(t)})]});
+const num=(t,i)=>new D.Paragraph({numbering:{reference:'nums',level:0},spacing:{after:80},children:[new D.TextRun({text:String(t)})]});
+const cell=(t,bold=false)=>new D.TableCell({children:[new D.Paragraph({children:[new D.TextRun({text:String(t||'—'),bold,size:20})]})]});
+const hcell=t=>new D.TableCell({shading:{fill:'0F2A44'},children:[new D.Paragraph({children:[new D.TextRun({text:String(t),bold:true,color:'FFFFFF',size:20})]})]});
+function addLong(text){text=String(text||'').trim();if(!text)return[new D.Paragraph({children:[new D.TextRun({text:'[To be completed]',italics:true,color:'888888'})]})];return text.split(/\n+/).map(l=>{l=l.trim().replace(/^#{1,3}\s*/,'');if(!l)return null;if(/^[-*•]\s/.test(l))return bullet(l.replace(/^[-*•]\s*/,'').replace(/\*/g,''));if(/^\d+[.)]\s/.test(l))return para(l.replace(/\*/g,''));return para(l.replace(/\*\*/g,'').replace(/\*/g,''))}).filter(Boolean)}
+const ch=[];const d=r.data,s=d.student,o=d.organization;
+ch.push(center((s.university||'UNIVERSITY').toUpperCase(),true,30));if(s.faculty)ch.push(center(s.faculty,false,22));if(s.department)ch.push(center(s.department,false,22));
+ch.push(new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{before:300,after:120},children:[new D.TextRun({text:'FIELD / INDUSTRIAL ATTACHMENT REPORT',bold:true,size:36})]}));
+ch.push(center(r.title,false,22));ch.push(new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{after:300},children:[new D.TextRun({text:'Attachment Period: '+((s.periodStart||'?')+' to '+(s.periodEnd||'?')),size:20,color:'555555'})]}));
+const infoRows=[['Student',s.fullName],['Registration No.',s.regNumber],['Programme',s.program],['Department',s.department],['Host Organization',o.name],['Onsite Supervisor',o.contactPerson],['Faculty Supervisor',s.facultySupervisor]].filter(x=>String(x[1]||'').trim());
+if(infoRows.length)ch.push(new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:infoRows.map(x=>new D.TableRow({children:[hcell(x[0]),cell(x[1])]}))}));
+if(s.fullName.trim()&&s.regNumber.trim()){ch.push(head('Declaration',D.HeadingLevel.HEADING_1));ch.push(para('I, '+s.fullName+' ('+s.regNumber+'), declare that this attachment report is my own original work prepared from my personal experience'+(o.name?' at '+o.name:'')+'. All sources consulted are acknowledged.'))}
+ch.push(head('Chapter One — Introduction',D.HeadingLevel.HEADING_1));ch.push(head('1.1 Background',D.HeadingLevel.HEADING_2));addLong(d.introduction.background).forEach(p=>ch.push(p));
+ch.push(head('1.2 Objectives',D.HeadingLevel.HEADING_2));const ob=d.introduction.objectives.filter(x=>x.trim());ob.length?ob.forEach((x,i)=>ch.push(num(x,i))):ch.push(para('[No objectives listed]'));
+ch.push(head('1.3 Scope',D.HeadingLevel.HEADING_2));addLong(d.introduction.scope).forEach(p=>ch.push(p));
+ch.push(head('Chapter Two — Organizational Structure',D.HeadingLevel.HEADING_1));ch.push(head('2.1 Overview',D.HeadingLevel.HEADING_2));addLong(d.structure.overview).forEach(p=>ch.push(p));
+ch.push(head('2.2 Departments',D.HeadingLevel.HEADING_2));const dp=d.structure.departments.filter(x=>x.name.trim());dp.length?ch.push(new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:[new D.TableRow({children:[hcell('Department'),hcell('Role')]}),...dp.map(x=>new D.TableRow({children:[cell(x.name,true),cell(x.function)]}))]})):ch.push(para('[No departments described]'));
+ch.push(head('2.3 Leadership & Supervision',D.HeadingLevel.HEADING_2));addLong(d.structure.leadership).forEach(p=>ch.push(p));
+ch.push(head('2.4 Organogram',D.HeadingLevel.HEADING_2));addLong(d.structure.organogram).forEach(p=>ch.push(p));
+ch.push(head('Chapter Three — Activities and Duties',D.HeadingLevel.HEADING_1));addLong(d.activities.summary).forEach(p=>ch.push(p));
+ch.push(head('Weekly Log',D.HeadingLevel.HEADING_2));const wk=d.activities.weekly.filter(w=>w.tasks.trim()||w.week.trim());wk.length?ch.push(new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:[new D.TableRow({children:[hcell('Week'),hcell('Dates'),hcell('Tasks')]}),...wk.map(w=>new D.TableRow({children:[cell(w.week,true),cell(w.dates),cell(w.tasks)]}))]})):ch.push(para('[No weekly entries]'));
+ch.push(head('Chapter Four — Projects and Assignments',D.HeadingLevel.HEADING_1));const pj=d.projects.items.filter(x=>x.title.trim());pj.length?pj.forEach((p,i)=>{ch.push(head('4.'+(i+1)+' '+p.title,D.HeadingLevel.HEADING_2));ch.push(para('Duration: '+(p.duration||'—')+' | Role: '+(p.role||'—')));addLong(p.description).forEach(x=>ch.push(x));ch.push(head('Outcome',D.HeadingLevel.HEADING_3));addLong(p.outcome).forEach(x=>ch.push(x))}):ch.push(para('[No projects recorded]'));
+ch.push(head('Chapter Five — Skills and Learning',D.HeadingLevel.HEADING_1));ch.push(head('Technical Skills',D.HeadingLevel.HEADING_2));d.skills.technical.filter(x=>x.trim()).forEach(x=>ch.push(bullet(x)));ch.push(head('Soft Skills',D.HeadingLevel.HEADING_2));d.skills.soft.filter(x=>x.trim()).forEach(x=>ch.push(bullet(x)));ch.push(head('Reflection',D.HeadingLevel.HEADING_2));addLong(d.skills.reflection).forEach(p=>ch.push(p));
+ch.push(head('Chapter Six — Challenges and Solutions',D.HeadingLevel.HEADING_1));const cc=d.challenges.items.filter(x=>x.challenge.trim());cc.length?ch.push(new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:[new D.TableRow({children:[hcell('#'),hcell('Challenge'),hcell('Solution'),hcell('Lesson')]}),...cc.map((c,i)=>new D.TableRow({children:[cell(String(i+1),true),cell(c.challenge),cell(c.solution),cell(c.lesson)]}))]})):ch.push(para('[No challenges recorded]'));
+ch.push(head('Chapter Seven — Conclusion and Recommendations',D.HeadingLevel.HEADING_1));addLong(d.conclusion.summary).forEach(p=>ch.push(p));ch.push(head('Recommendations',D.HeadingLevel.HEADING_2));d.conclusion.recommendations.filter(x=>x.trim()).forEach((x,i)=>ch.push(num(x,i)));ch.push(head('Suggestions',D.HeadingLevel.HEADING_2));addLong(d.conclusion.future).forEach(p=>ch.push(p));
+ch.push(head('References',D.HeadingLevel.HEADING_1));const rf=d.references.refs.filter(x=>x.trim());rf.length?rf.forEach((x,i)=>ch.push(num(x,i))):ch.push(para('[No references]'));
+ch.push(head('Acronyms & Abbreviations',D.HeadingLevel.HEADING_1));const ac=d.references.acronyms.filter(x=>x.abbr.trim());ac.length?ch.push(new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},rows:[new D.TableRow({children:[hcell('Abbreviation'),hcell('Full Meaning')]}),...ac.map(a=>new D.TableRow({children:[cell(a.abbr.toUpperCase(),true),cell(a.full)]}))]})):ch.push(para('[No acronyms]'));
+const doc=new D.Document({creator:'Attachment Report Builder',title:r.title,numbering:{config:[{reference:'nums',levels:[{level:0,format:D.LevelFormat.DECIMAL,text:'%1.',alignment:D.AlignmentType.LEFT}]}]},sections:[{properties:{page:{margin:{top:1000,bottom:1000,left:1000,right:1000}}},headers:{default:new D.Header({children:[new D.Paragraph({alignment:D.AlignmentType.RIGHT,children:[new D.TextRun({text:(s.fullName||'')+' · '+(s.regNumber||''),size:18,color:'888888'})]})]})},footers:{default:new D.Footer({children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.TextRun({children:[D.PageNumber.CURRENT,' of ',D.PageNumber.TOTAL_PAGES],size:18,color:'888888'})]})]})},children:ch}]});
+const blob=await D.Packer.toBlob(doc);saveAs(blob,sanitizeFn(r.title)+'.docx');toast('DOCX downloaded — generated on-device.','success')}catch(e){console.error(e);toast('DOCX export failed: '+e.message,'error')}}
+async function exportPdf(id){id=id||previewId||activeReportId;const r=getById(id);if(!r)return;if(typeof html2pdf==='undefined'){toast('PDF engine still loading — check connection and retry.','error');return}toast('Generating PDF… this takes a few seconds.','info',2500);try{const wrap=document.createElement('div');wrap.innerHTML='<div class="report-paper" style="max-width:100%;box-shadow:none"><div class="report-doc" style="padding:40px">'+buildReportHTML(r)+'</div></div>';document.body.appendChild(wrap);await html2pdf().set({margin:[10,10,12,10],filename:sanitizeFn(r.title)+'.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(wrap.firstChild).save();wrap.remove();toast('PDF downloaded.','success')}catch(e){console.error(e);toast('PDF export failed: '+e.message,'error')}}
+function printReport(id){id=id||previewId||activeReportId;const r=getById(id);if(!r)return;$('printDoc').innerHTML=buildReportHTML(r);setTimeout(()=>window.print(),150)}
+function exportBackupOne(id){id=id||activeReportId;const r=getById(id);if(!r)return;const blob=new Blob([JSON.stringify(r,null,2)],{type:'application/json'});saveAs(blob,sanitizeFn(r.title)+'-backup.json');toast('Backup JSON downloaded.','success')}
+
+/* ============ BACKUP / STORAGE ============ */
+function storageBytes(){try{return (localStorage.getItem(KEY)||'').length*2}catch(e){return 0}}
+function updateStorageUI(){const b=storageBytes(),kb=(b/1024).toFixed(1),pct=Math.min(100,Math.round(b/(5*1024*1024)*100));$('sideStorageBar').style.width=pct+'%';$('sideStoragePct').textContent=pct+'%';$('sideStorageText').textContent=kb+' KB used · 100% on this device';$('privacyStorage').textContent=reports.length+' report(s) · '+kb+' KB of ~5 MB browser quota ('+pct+'%)';$('privacyBar').style.width=pct+'%'}
+function exportAllBackup(){if(!reports.length){toast('Nothing to back up yet.','warn');return}saveAs(new Blob([JSON.stringify(reports,null,2)],{type:'application/json'}),'attachment-reports-backup-'+new Date().toISOString().slice(0,10)+'.json');toast('Full backup downloaded.','success')}
+function importBackup(e){const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);const arr=Array.isArray(data)?data:[data];let n=0;arr.forEach(r=>{if(r&&r.data){r.id=uid();r.updatedAt=Date.now();reports.unshift(r);n++}});persist();renderDashboard();toast(n+' report(s) imported.','success')}catch(err){toast('Invalid backup file.','error')}};rd.readAsText(f);e.target.value=''}
+function confirmWipe(){if(!reports.length){toast('No data to delete.','warn');return}openModal('<h3 class="font-serif font-bold text-lg text-red-800">Delete ALL reports?</h3><p class="text-sm text-slate-600 mt-2">This permanently erases '+reports.length+' report(s) from this device. Download a backup first if you may need them.</p><div class="flex gap-2 mt-5"><button onclick="closeModal()" class="btn-secondary flex-1 justify-center">Cancel</button><button onclick="exportAllBackup()" class="btn-secondary flex-1 justify-center">Backup first</button><button onclick="doWipe()" class="btn-danger flex-1">Delete all</button></div>')}
+function doWipe(){reports=[];activeReportId=null;persist();closeModal();showView('dashboard');toast('All local data erased.','success')}
+
+/* ============ GUIDE ============ */
+function buildGuide(){const g=[['1 · Student Information','Your academic identity anchors the whole report.','Use exact names, numbers and dates as on official records. Double-check the attachment start/end dates — examiners verify these against logbooks and completion letters.'],['2 · Organization Details','Prove you were really there.','Official name, address, your daily supervisor and what the organization does — in your own words. Never copy the company website; summarize and cite it.'],['3 · Introduction','Set up purpose and boundaries.','Background (why attachments matter + your specific placement), 3+ measurable objectives, and scope. Write in past tense; 150+ words for background is typical.'],['4 · Organizational Structure','Show you understood the system.','Overview of hierarchy, departments you touched, who supervised you, and your place on the organogram. Only describe units you verified firsthand.'],['5 · Activities & Duties','The heart of the report — be concrete.','Weekly log: what you did, tools/methods, supervision, outcome. Replace "various tasks" with named tasks. This chapter is usually the longest.'],['6 · Projects & Assignments','Showcase distinct deliverables.','Each project: title, duration, your role, what you personally did, and the result. Separate your contribution from team effort honestly.'],['7 · Skills & Learning','Before vs after.','Technical skills (tools, procedures) + soft skills (teamwork, communication) + reflection linking theory to practice. Give one real example per skill.'],['8 · Challenges & Solutions','Honesty builds credibility.','Real problems (equipment, knowledge gaps, workload) + actions taken + lessons. Reports with zero challenges look invented — include at least two.'],['9 · Conclusion & Recommendations','Synthesize, don\'t repeat.','Confirm whether objectives were met, summarize value, then give actionable recommendations to the organization, university and future attachés.'],['10 · References & Acronyms','Academic integrity finishes the job.','Cite only sources you used (manuals, policies, sites with access dates). Define every abbreviation on first use and in the table.']];
+$('guideCards').innerHTML=g.map(x=>'<div class="bg-white border border-[#e3dcc8] rounded-2xl p-5 shadow-card"><p class="text-[.7rem] font-extrabold tracking-wider text-gold-600 uppercase">'+esc(x[0])+'</p><h4 class="font-serif font-bold text-navy-800 mt-1">'+esc(x[1])+'</h4><p class="text-[.83rem] text-slate-500 mt-2 leading-relaxed">'+esc(x[2])+'</p></div>').join('')}
+
+/* ============ INIT ============ */
+load();buildGuide();renderDashboard();updateStorageUI();showView('dashboard');
+</script>
+</body>
+</html>
